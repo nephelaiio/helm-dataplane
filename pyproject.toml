@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "nephelaiio.dataplane"
+version = "0.1.0"
+description = ""
+authors = ["Teodoro Cook <teodoro.cook@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+molecule = "^4.0.1"
+kubernetes = "^24.2.0"
+openshift = "^0.13.1"
+jmespath = "^1.0.1"
+docker = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

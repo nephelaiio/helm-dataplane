@@ -1,0 +1,103 @@
+---
+- name: create
+
+  hosts: localhost
+
+  gather_facts: false
+
+  roles:
+
+    - nephelaiio.plugins
+    - nephelaiio.kind
+
+  pre_tasks:
+
+    - name: manage docker kind network
+      community.docker.docker_network:
+        name: "kind"
+        enable_ipv6: false
+        ipam_config:
+          - subnet: "{{ docker_net_addr }}"
+            gateway: "{{ docker_net_addr | ipaddr(1) | ipaddr('address') }}"
+            iprange: "{{ kind_net_addr }}"
+
+    - name: set helm release metadata
+      block:
+
+        - name: query helm releases
+          ansible.builtin.uri:
+            url: https://api.github.com/repos/helm/helm/releases/latest
+          register: helm_release_query
+
+        - name: set kind release target
+          ansible.builtin.set_fact:
+            helm_release: "{{ helm_release_query.json.tag_name }}"
+
+      when: helm_release is not defined
+
+  tasks:
+
+    - name: create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: kind
+      register: _tmpdir
+      changed_when: false
+
+    - name: install helm binary
+      block:
+
+        - name: download helm release package
+          ansible.builtin.unarchive:
+            src: "https://get.helm.sh/helm-{{ helm_release }}-linux-amd64.tar.gz"
+            dest: "{{ _tmpdir.path }}"
+            remote_src: true
+          register: helm_dl_op
+          retries: 3
+          delay: 10
+          until: helm_dl_op is success
+          changed_when: false
+
+        - name: find helm executable
+          ansible.builtin.find:
+            paths: "{{ _tmpdir.path }}"
+            file_type: file
+            recurse: true
+            use_regex: true
+            patterns:
+              - '^helm$'
+          register: helm_bin
+
+        - name: copy helm executable
+          ansible.builtin.copy:
+            src: "{{ helm_bin.files[0].path }}"
+            dest: "{{ k8s_helm_bin }}"
+            mode: '0755'
+
+      always:
+
+        - name: cleanup temp files
+          ansible.builtin.file:
+            state: absent
+            path: "{{ _tmpdir.path }}"
+
+    - name: install helm diff plugin
+      kubernetes.core.helm_plugin:
+        plugin_path: https://github.com/databus23/helm-diff
+        state: present
+        binary_path: "{{ k8s_helm_bin }}"
+      ignore_errors: true
+
+  post_tasks:
+
+    - name: list cluster nodes
+      command: "{{ kind_bin }} get nodes --name {{ kind_cluster_name }}"
+      register: kind_cluster_node_query
+
+    - name: update cache for cluster nodes
+      command: "docker exec {{ item }} apt-get update"
+      loop: "{{ kind_cluster_node_query.stdout_lines }}"
+
+    - name: install iscsi tools on cluster nodes
+      command: "docker exec {{ item }} apt-get install --yes open-iscsi"
+      loop: "{{ kind_cluster_node_query.stdout_lines }}"

@@ -1,0 +1,7 @@
+---
+roles:
+  - nephelaiio.plugins
+  - nephelaiio.kind
+  - geerlingguy.helm
+collections:
+  - community.general

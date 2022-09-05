@@ -1,0 +1,42 @@
+---
+dependency:
+  name: galaxy
+  options:
+    role-file: requirements.yml
+    requirements-file: requirements.yml
+platforms:
+  - name: localhost
+driver:
+  name: delegated
+provisioner:
+  name: ansible
+  inventory:
+    hosts:
+      all:
+        vars:
+          # test-only vardefs
+          ansible_connection: local
+          ansible_python_interpreter: python
+          docker_net_addr: 172.19.0.0/16
+
+          # k8s vardefs
+          k8s_kubeconfig: ${MOLECULE_EPHEMERAL_DIRECTORY}/config
+          k8s_certmanager_issuer: local
+          k8s_cluster_name: molecule.nephelai.io
+          k8s_address_pool_private_iprange: 172.19.1.0/24
+          k8s_address_pool_public_iprange: 172.19.2.0/24
+          k8s_metallb_speaker_secret: secret
+          k8s_verifier_path: ${MOLECULE_EPHEMERAL_DIRECTORY}
+          k8s_longhorn_deploy: true
+          k8s_awxoperator_deploy: true
+          k8s_helm_bin: ${MOLECULE_EPHEMERAL_DIRECTORY}/helm
+
+          # kind vardefs
+          kind_bin: ${MOLECULE_EPHEMERAL_DIRECTORY}/kind
+          kind_net_addr: 172.19.0.0/24
+          kind_cluster_name: molecule-dataplane
+          kind_kubeconfig: "{{ k8s_kubeconfig }}"
+          kind_release_tag: latest
+
+verifier:
+  name: ansible

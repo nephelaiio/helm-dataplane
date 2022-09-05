@@ -1,0 +1,15 @@
+---
+- name: destroy
+
+  hosts: localhost
+
+  gather_facts: false
+
+  vars:
+
+    kind_cluster_state: absent
+
+  roles:
+
+    - nephelaiio.plugins
+    - nephelaiio.kind
