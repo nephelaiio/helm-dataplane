@@ -1,12 +1,85 @@
 ---
-- name: Converge
+- name: converge
 
-  hosts: all
+  hosts: localhost
 
   gather_facts: false
 
-  tasks:
+  vars:
 
-    - name: "Include nephelaiio.dataplane"
-      ansible.builtin.include_role:
-        name: "nephelaiio.dataplane"
+    pg_user: molecule
+    pg_pass: molecule
+
+  pre_tasks:
+
+    - name: deploy test postgresql db blue
+      kubernetes.core.helm:
+        name: molecule-blue
+        chart_ref: postgresql
+        chart_repo_url: https://charts.bitnami.com/bitnami
+        release_namespace: molecule
+        create_namespace: true
+        state: present
+        wait: true
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        binary_path: "{{ k8s_helm_bin | default(omit) }}"
+        values:
+          global:
+            postgresql:
+              auth:
+                postgresPassword: "{{ pg_pass}}"
+                username: "{{ pg_user }}"
+                password: "{{ pg_pass }}"
+                database: blue
+          primary:
+            service:
+              type: LoadBalancer
+              annotations:
+                metallb.universe.tf/address-pool: public
+                external-dns.alpha.kubernetes.io/hostname: "blue.{{ k8s_cluster_name }}"
+
+    - name: deploy test postgresql db green
+      kubernetes.core.helm:
+        name: molecule-green
+        chart_ref: postgresql
+        chart_repo_url: https://charts.bitnami.com/bitnami
+        release_namespace: molecule
+        create_namespace: true
+        state: present
+        wait: true
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        binary_path: "{{ k8s_helm_bin | default(omit) }}"
+        values:
+          global:
+            postgresql:
+              auth:
+                postgresPassword: "{{ pg_pass}}"
+                username: "{{ pg_user }}"
+                password: "{{ pg_pass }}"
+                database: green
+          primary:
+            service:
+              type: LoadBalancer
+              annotations:
+                metallb.universe.tf/address-pool: public
+                external-dns.alpha.kubernetes.io/hostname: "green.{{ k8s_cluster_name }}"
+
+    - name: deploy test mysql db black
+      kubernetes.core.helm:
+        name: molecule-black
+        chart_ref: mysql
+        chart_repo_url: https://charts.bitnami.com/bitnami
+        release_namespace: molecule
+        create_namespace: true
+        state: absent
+        wait: true
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        binary_path: "{{ k8s_helm_bin | default(omit) }}"
+        values:
+          global:
+            postgresql:
+              auth:
+                postgresPassword: "{{ pg_pass}}"
+                username: "{{ pg_user }}"
+                password: "{{ pg_pass }}"
+                database: blue
