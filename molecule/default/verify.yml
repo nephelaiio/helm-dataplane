@@ -1,10 +1,19 @@
 ---
-# This is an example playbook to execute Ansible tests.
+- name: verify
 
-- name: Verify
-  hosts: all
+  hosts: localhost
+
   gather_facts: false
+
+  roles:
+
+    - nephelaiio.plugins
+
   tasks:
-  - name: Example assertion
-    ansible.builtin.assert:
-      that: true
+
+    - name: verify cluster
+      include_role:
+        name: nephelaiio.k8s
+      vars:
+        k8s_deploy: false
+        k8s_verify: true
