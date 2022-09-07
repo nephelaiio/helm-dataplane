@@ -30,6 +30,7 @@ provisioner:
           k8s_longhorn_deploy: true
           k8s_awxoperator_deploy: true
           k8s_helm_bin: ${MOLECULE_EPHEMERAL_DIRECTORY}/helm
+          k8s_wait_timeout: 120
 
           # kind vardefs
           kind_bin: ${MOLECULE_EPHEMERAL_DIRECTORY}/kind
