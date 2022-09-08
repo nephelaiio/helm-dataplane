@@ -1,0 +1,21 @@
+---
+name: Chart update
+
+on:
+  schedule:
+    - cron: "0 0 6 * *"
+
+jobs:
+  keepalive:
+    name: Update chart versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update chart releases
+        run: |
+          bin/update_charts
+      - name: Commit and push changes
+        uses: devops-infra/action-commit-push@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_message: "Updated Helm charts"

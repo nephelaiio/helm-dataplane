@@ -5,3 +5,4 @@ roles:
   - geerlingguy.helm
 collections:
   - community.general
+  - community.postgresql

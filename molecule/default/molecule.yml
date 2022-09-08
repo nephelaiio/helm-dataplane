@@ -10,6 +10,9 @@ driver:
   name: delegated
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: ansible.posix.profile_tasks
   inventory:
     hosts:
       all:
@@ -23,21 +26,33 @@ provisioner:
           k8s_kubeconfig: ${MOLECULE_EPHEMERAL_DIRECTORY}/config
           k8s_certmanager_issuer: local
           k8s_cluster_name: molecule.nephelai.io
-          k8s_address_pool_private_iprange: 172.19.1.0/24
-          k8s_address_pool_public_iprange: 172.19.2.0/24
+          k8s_address_pools:
+            - scheme: internal
+              name: private
+              pool: 172.19.2.0/24
           k8s_metallb_speaker_secret: secret
           k8s_verifier_path: ${MOLECULE_EPHEMERAL_DIRECTORY}
-          k8s_longhorn_deploy: true
-          k8s_awxoperator_deploy: true
           k8s_helm_bin: ${MOLECULE_EPHEMERAL_DIRECTORY}/helm
-          k8s_wait_timeout: 120
+          k8s_wait_timeout: 500
+          k8s_pgo_deploy: true
+          k8s_strimzi_deploy: true
+          k8s_argocd_deploy: false
+          k8s_longhorn_deploy: false
+          k8s_awxoperator_deploy: false
 
           # kind vardefs
           kind_bin: ${MOLECULE_EPHEMERAL_DIRECTORY}/kind
           kind_net_addr: 172.19.0.0/24
-          kind_cluster_name: molecule-dataplane
+          kind_cluster_name: molecule-cdc
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
           kind_release_tag: latest
+
+          # postgres vardefs
+          postgres_namespace: molecule
+          postgres_db_host: "pg.molecule.nephelai.io"
+          postgres_db_user: postgres
+          postgres_db_pass: molecule
+          postgres_db_name: pagila
 
 verifier:
   name: ansible
