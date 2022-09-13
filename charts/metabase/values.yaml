@@ -1,0 +1,36 @@
+---
+replicaCount: 2
+
+image:
+  repository: metabase/metabase
+  pullPolicy: IfNotPresent
+  tag: "v0.44.2"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: true
+  hostname: "metabase.local"
+  className: "nginx-private"
+  tls:
+    secretName: metabase-ingress-tls
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

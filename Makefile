@@ -15,7 +15,7 @@ POSTGRESQL_PASS := $$(yq eval '.provisioner.inventory.hosts.all.vars.postgres_db
 
 .PHONY: local aws poetry
 
-test create converge verify destroy: poetry
+test create prepare converge verify destroy: poetry
 	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $@
 
 run:
