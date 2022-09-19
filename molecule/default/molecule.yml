@@ -47,15 +47,15 @@ provisioner:
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
           kind_release_tag: latest
 
-          # postgres vardefs
-          postgres_namespace: molecule
-          postgres_db_host: "pg.molecule.nephelai.io"
-          postgres_db_user: postgres
-          postgres_db_pass: molecule
-          postgres_db_name: pagila
+          # test vardefs
+          dataplane_src_namespace: "{{ dataplane_namespace }}"
+          dataplane_src_team: dataplane
+          dataplane_src_user: postgres
+          dataplane_src_db: pagila
 
-          # metabase vardefs
+          # dataplane vardefs
           dataplane_namespace: dataplane
+          dataplane_path: ${MOLECULE_PROJECT_DIRECTORY}
           dataplane_metabase_hostname: "metabase.{{ k8s_cluster_name }}"
 
 verifier:

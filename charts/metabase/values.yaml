@@ -24,8 +24,16 @@ ingress:
   enabled: true
   hostname: "metabase.local"
   className: "nginx-private"
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
   tls:
     secretName: metabase-ingress-tls
+
+postgres:
+  storage:
+    size: 10Gi
+  backup:
+    size: 10Gi
 
 resources: {}
 
