@@ -46,6 +46,15 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: "MB_DB_TYPE"
+              value: "postgres"
+            - name: "MB_DB_HOST"
+              value: {{ include "metabase.db.name" . }}
+            - name: "MB_DB_USER"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ }} {{ include  }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -21,19 +21,23 @@ service:
   port: 3000
 
 ingress:
-  enabled: true
-  hostname: "metabase.local"
-  className: "nginx-private"
-  annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-  tls:
-    secretName: metabase-ingress-tls
+  enabled: false
+  annotations: []
+  hostName: ""
+  className: ""
+  secretName: ""
 
-postgres:
-  storage:
-    size: 10Gi
-  backup:
-    size: 10Gi
+zalando:
+  db:
+    name: db
+    version: 14
+    loadBalancer: false
+    instances: 2
+    volume: 10Gi
+    serviceAnnotations: []
+
+config:
+  adminEmail: info@example.org
 
 resources: {}
 

@@ -1,6 +1,7 @@
 ---
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "metabase.fullname" . -}}
+{{- $secretName := include "metabase.ingress.secretName" . -}}
 {{- $svcPort := .Values.service.port -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
@@ -29,8 +30,8 @@ spec:
   {{- end }}
   tls:
     - hosts:
-        - {{ .Values.ingress.hostname }}
-      secretName: {{ .Values.ingress.tls.secretName }}
+        - "{{ .Values.ingress.hostName }}"
+      secretName: {{ $secretName }}
   rules:
     - host: {{ .host | quote }}
       http:

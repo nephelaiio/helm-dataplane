@@ -48,10 +48,10 @@ provisioner:
           kind_release_tag: latest
 
           # test vardefs
-          dataplane_src_namespace: "{{ dataplane_namespace }}"
-          dataplane_src_team: dataplane
-          dataplane_src_user: postgres
-          dataplane_src_db: pagila
+          dataplane_src_namespace: dataplane
+          dataplane_src_team: pagila
+          dataplane_src_user: metabase
+          dataplane_src_db: db
 
           # dataplane vardefs
           dataplane_namespace: dataplane

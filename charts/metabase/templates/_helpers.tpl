@@ -60,3 +60,53 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+DB name
+*/}}
+{{- define "metabase.db.name" -}}
+{{- (printf "%s-%s" (include "metabase.fullname" .) "db") -}}
+{{- end }}
+
+{{/*
+DB team name
+*/}}
+{{- define "metabase.db.team" -}}
+{{- include "metabase.fullname" . -}}
+{{- end }}
+
+{{/*
+TLS secret name
+*/}}
+{{- define "metabase.ingress.secretName" -}}
+{{- if .Values.ingress.secretName }}
+{{- .Values.ingress.secretName }}
+{{- else }}
+{{- (printf "%s-%s" (include "metabase.fullname" .) "tls") -}}
+{{- end }}
+{{- end }}
+
+{{/*
+API secret name
+*/}}
+{{- define "metabase.apiSecretName" -}}
+{{- (printf "%s-%s" (include "metabase.fullname" .) "api-token") -}}
+{{- end }}
+
+{{/*
+Stable API secret data
+*/}}
+{{- define "api.secret" -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "metabase.apiSecretName" .) -}}
+{{- if $secret -}}
+{{/*
+   Reusing existing secret data
+*/}}
+apiKey: {{ $secret.data.apiKey }}
+{{- else -}}
+{{/*
+    Generate new secret
+*/}}
+apiKey: {{ randAlphaNum 16 | b64enc }}
+{{- end -}}
+{{- end -}}

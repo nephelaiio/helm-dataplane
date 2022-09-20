@@ -23,7 +23,9 @@
         binary_path: "{{ k8s_helm_bin }}"
         values:
           ingress:
-            hostname: "{{ dataplane_metabase_hostname }}"
+            enabled: true
+            className: nginx-private
+            hostName: "{{ dataplane_metabase_hostname }}"
 
     - name: deploy source postgresql db
       kubernetes.core.k8s:
@@ -48,32 +50,63 @@
             serviceAnnotations:
               metallb.universe.tf/address-pool: private
             users:
-              zalando:
+              admin:
                 - superuser
                 - createdb
-              {{ dataplane_src_user }}: []
+              {{ dataplane_src_user }}:
+                - superuser
+                - createdb
             databases:
               {{ dataplane_src_db }}: {{ dataplane_src_user }}
             postgresql:
               version: "13"
 
-    - fail:
+    - name: query connection data
+      ansible.builtin.set_fact:
+        pagila_src_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
+        pagila_src_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
+      vars:
+        pagila_db_secret_name: "{{ dataplane_src_user }}-{{ dataplane_src_team }}-{{ dataplane_src_db }}"
+        pagila_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', pagila_db_secret_name) | first }}"
+        secret_query: "{{
+          query(
+            'kubernetes.core.k8s',
+            namespace=dataplane_src_namespace,
+            kind='Secret',
+            kubeconfig=k8s_kubeconfig
+          )
+        }}"
+
+    - name: query service data
+      ansible.builtin.set_fact:
+        pagila_src_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
+      vars:
+        pagila_db_svc_name: "{{ dataplane_src_team }}-{{ dataplane_src_db }}"
+        pagila_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', pagila_db_svc_name) | first }}"
+        service_query: "{{
+          query(
+            'kubernetes.core.k8s',
+            namespace=dataplane_src_namespace,
+            kind='Service',
+            kubeconfig=k8s_kubeconfig
+          )
+        }}"
 
     - name: drop database
       community.postgresql.postgresql_db:
-        name: "{{ pg_test_name }}"
+        name: "{{ dataplane_src_db }}"
         state: absent
-        login_user: "{{ pg_test_user }}"
-        login_password: "{{ pg_test_pass }}"
-        login_host: "{{ loadbalancer_ips[pg_test_host] }}"
+        login_user: "{{ pagila_src_user }}"
+        login_password: "{{ pagila_src_pass }}"
+        login_host: "{{ pagila_src_host }}"
 
     - name: create database
       community.postgresql.postgresql_db:
-        name: "{{ pg_test_name }}"
+        name: "{{ dataplane_src_db }}"
         state: present
-        login_user: "{{ pg_test_user }}"
-        login_password: "{{ pg_test_pass }}"
-        login_host: "{{ loadbalancer_ips[pg_test_host] }}"
+        login_user: "{{ pagila_src_user }}"
+        login_password: "{{ pagila_src_pass }}"
+        login_host: "{{ pagila_src_host }}"
 
     - name: create data tempdir
       ansible.builtin.tempfile:
@@ -101,11 +134,11 @@
 
         - name: load pagila db data
           community.postgresql.postgresql_db:
-            name: "{{ pg_test_name }}"
+            name: "{{ dataplane_src_db }}"
             state: restore
-            login_user: "{{ pg_test_user }}"
-            login_password: "{{ pg_test_pass }}"
-            login_host: "{{ loadbalancer_ips[pg_test_host] }}"
+            login_user: "{{ pagila_src_user }}"
+            login_password: "{{ pagila_src_pass }}"
+            login_host: "{{ pagila_src_host }}"
             target: "{{ datadir.path }}/pagila.sql"
           changed_when: false
 

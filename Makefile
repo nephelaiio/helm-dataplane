@@ -9,16 +9,13 @@ KIND_IMAGE := $$(yq eval '.jobs.molecule.strategy.matrix.image | sort | reverse 
 ROLE_NAME := $$(pwd | xargs basename)
 SCENARIO_NAME := default
 EPHEMERAL_DIR := $$HOME/.cache/molecule/$(ROLE_NAME)/$(SCENARIO_NAME)
-PG_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.zalando_db' molecule/default/molecule.yml -r)
-PG_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.zalando_namespace' molecule/default/molecule.yml -r)
-PG_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.zalando_team' molecule/default/molecule.yml -r)
-PG_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.zalando_user' molecule/default/molecule.yml -r)
-PG_PASS := $$(make --no-print-directory kubectl get secret $(PG_USER).$(PG_TEAM)-$(PG_DB).zalando -- -n $(PG_NS) -o json | jq '.data.password' -r | base64 -d )
-PG_HOST := $$(make --no-print-directory kubectl get service -- -n $(PG_NS) -o json | jq ".items | map(select(.metadata.name == \"$(PG_TEAM)-$(PG_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-POSTGRESQL_HOST := $$(yq eval '.provisioner.inventory.hosts.all.vars.postgres_db_host' molecule/default/molecule.yml)
-POSTGRESQL_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.postgres_db_user' molecule/default/molecule.yml)
-POSTGRESQL_PASS := $$(yq eval '.provisioner.inventory.hosts.all.vars.postgres_db_pass' molecule/default/molecule.yml)
+PG_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_src_db' molecule/default/molecule.yml -r)
+PG_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_src_namespace' molecule/default/molecule.yml -r)
+PG_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_src_team' molecule/default/molecule.yml -r)
+PG_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_src_user' molecule/default/molecule.yml -r)
+PG_PASS := $$(make --no-print-directory kubectl get secret $(PG_USER)-$(PG_TEAM)-$(PG_DB) -- -n $(PG_NS) -o json | jq '.data.password' -r | base64 -d )
+PG_HOST := $$(make --no-print-directory kubectl get service -- -n $(PG_NS) -o json | jq ".items | map(select(.metadata.name == \"$(PG_TEAM)-$(PG_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
 .PHONY: local aws poetry
 
