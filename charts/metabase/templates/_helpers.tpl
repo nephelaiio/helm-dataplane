@@ -64,7 +64,7 @@ Create the name of the service account to use
 {{/*
 DB name
 */}}
-{{- define "metabase.db.name" -}}
+{{- define "metabase.db.cluster" -}}
 {{- (printf "%s-%s" (include "metabase.fullname" .) "db") -}}
 {{- end }}
 
@@ -73,6 +73,13 @@ DB team name
 */}}
 {{- define "metabase.db.team" -}}
 {{- include "metabase.fullname" . -}}
+{{- end }}
+
+{{/*
+ DB user secret
+ */}}
+{{- define "metabase.db.secret" -}}
+{{ .Values.zalando.db.user }}-{{- include "metabase.db.cluster" . -}}
 {{- end }}
 
 {{/*

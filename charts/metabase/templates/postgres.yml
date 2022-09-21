@@ -2,7 +2,7 @@
 apiVersion: acid.zalan.do/v1
 kind: postgresql
 metadata:
-  name: {{ include "metabase.db.name" . }}
+  name: {{ include "metabase.db.cluster" . }}
 spec:
   teamId: {{ include "metabase.db.team" . }}
   volume:
@@ -19,8 +19,8 @@ spec:
     admin:
       - superuser
       - createdb
-    metabase: []
+    {{ .Values.zalando.db.user }}: []
   databases:
-    metabase: metabase
+    metabase: {{ .Values.zalando.db.user }}
   postgresql:
     version: "{{ .Values.zalando.db.version }}"

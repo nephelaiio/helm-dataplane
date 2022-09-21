@@ -14,6 +14,10 @@ podAnnotations: {}
 
 podSecurityContext: {}
 
+podEnvironmentVars:
+  - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
+    value: "true"
+
 securityContext: {}
 
 service:
@@ -35,9 +39,7 @@ zalando:
     instances: 2
     volume: 10Gi
     serviceAnnotations: []
-
-config:
-  adminEmail: info@example.org
+    user: metabase
 
 resources: {}
 

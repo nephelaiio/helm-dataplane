@@ -92,6 +92,24 @@
           )
         }}"
 
+    - name: wait for database cluster startup
+      ansible.builtin.fail:
+        msg: "zalando clusters failed to come up on time"
+      vars:
+        cluster_failed: "{{ cluster_query | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
+        cluster_query: "{{
+          query(
+            'kubernetes.core.k8s',
+            api_version='acid.zalan.do/v1',
+            kind='postgresql',
+            kubeconfig=k8s_kubeconfig
+          )
+        }}"
+      retries: 12
+      delay: 30
+      until: cluster_failed | length == 0
+      failed_when: cluster_failed | length > 0
+
     - name: drop database
       community.postgresql.postgresql_db:
         name: "{{ dataplane_src_db }}"

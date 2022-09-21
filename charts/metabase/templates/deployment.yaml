@@ -47,14 +47,32 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
+            - name: "MB_SITE_URL"
+              value: "https://{{ .Values.ingress.hostName }}"
+            - name: "MB_SITE_LOCALE"
+              value: "en"
             - name: "MB_DB_TYPE"
               value: "postgres"
             - name: "MB_DB_HOST"
-              value: {{ include "metabase.db.name" . }}
+              value: {{ include "metabase.db.cluster" . }}
             - name: "MB_DB_USER"
               valueFrom:
                 secretKeyRef:
-                  name: {{ }} {{ include  }}
+                  name: {{ include "metabase.db.secret" . }}
+                  key: username
+            - name: "MB_DB_USER"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "metabase.db.secret" . }}
+                  key: username
+            - name: "MB_DB_PASS"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "metabase.db.secret" . }}
+                  key: password
+          {{- with .Values.podEnvironmentVars }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

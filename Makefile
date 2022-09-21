@@ -17,9 +17,12 @@ PG_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_src_user'
 PG_PASS := $$(make --no-print-directory kubectl get secret $(PG_USER)-$(PG_TEAM)-$(PG_DB) -- -n $(PG_NS) -o json | jq '.data.password' -r | base64 -d )
 PG_HOST := $$(make --no-print-directory kubectl get service -- -n $(PG_NS) -o json | jq ".items | map(select(.metadata.name == \"$(PG_TEAM)-$(PG_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-.PHONY: local aws poetry
+.PHONY: poetry run helm kubectl psql test create prepare converge verify destroy cleanup clean
 
-test create prepare converge verify destroy cleanup: poetry
+clean:
+	rm -rf /home/teddyphreak/.cache/ansible-compat/*
+
+test create prepare converge verify destroy cleanup: poetry clean
 	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $@
 
 run:
