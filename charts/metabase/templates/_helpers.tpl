@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "metabase.name" -}}
+{{- define "dataplane.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "metabase.fullname" -}}
+{{- define "dataplane.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "metabase.chart" -}}
+{{- define "dataplane.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "metabase.labels" -}}
-helm.sh/chart: {{ include "metabase.chart" . }}
-{{ include "metabase.selectorLabels" . }}
+{{- define "dataplane.labels" -}}
+helm.sh/chart: {{ include "dataplane.chart" . }}
+{{ include "dataplane.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,66 +45,73 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "metabase.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "metabase.name" . }}
+{{- define "dataplane.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "dataplane.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "metabase.serviceAccountName" -}}
+{{- define "dataplane.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "metabase.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "dataplane.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
 {{/*
-DB name
+Metabase cluster name
 */}}
-{{- define "metabase.db.cluster" -}}
-{{- (printf "%s-%s" (include "metabase.fullname" .) "db") -}}
+{{- define "dataplane.metabase.cluster" -}}
+{{- (printf "%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.metabase.db" .)) -}}
+{{- end }}
+
+{{/*
+Metabase DB name
+*/}}
+{{- define "dataplane.zalando.metabase.db" -}}
+{{ .Values.zalando.metabase.name }}
 {{- end }}
 
 {{/*
 DB team name
 */}}
-{{- define "metabase.db.team" -}}
-{{- include "metabase.fullname" . -}}
+{{- define "dataplane.zalando.team" -}}
+{{- include "dataplane.fullname" . -}}
 {{- end }}
 
 {{/*
- DB user secret
+Metabase DB user secret
  */}}
-{{- define "metabase.db.secret" -}}
-{{ .Values.zalando.db.user }}-{{- include "metabase.db.cluster" . -}}
+{{- define "dataplane.metabase.secret" -}}
+{{ .Values.zalando.metabase.user }}-{{- include "dataplane.metabase.cluster" . -}}
 {{- end }}
 
 {{/*
 TLS secret name
 */}}
-{{- define "metabase.ingress.secretName" -}}
+{{- define "dataplane.ingress.secretName" -}}
 {{- if .Values.ingress.secretName }}
 {{- .Values.ingress.secretName }}
 {{- else }}
-{{- (printf "%s-%s" (include "metabase.fullname" .) "tls") -}}
+{{- (printf "%s-%s" (include "dataplane.fullname" .) "tls") -}}
 {{- end }}
 {{- end }}
 
 {{/*
 API secret name
 */}}
-{{- define "metabase.apiSecretName" -}}
-{{- (printf "%s-%s" (include "metabase.fullname" .) "api-token") -}}
+{{- define "dataplane.apiSecretName" -}}
+{{- (printf "%s-%s" (include "dataplane.fullname" .) "api-token") -}}
 {{- end }}
 
 {{/*
 Stable API secret data
 */}}
-{{- define "api.secret" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "metabase.apiSecretName" .) -}}
+{{- define "dataplane.metabase.api.secret" -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.apiSecretName" .) -}}
 {{- if $secret -}}
 {{/*
    Reusing existing secret data

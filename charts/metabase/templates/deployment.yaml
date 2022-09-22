@@ -3,14 +3,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "metabase.fullname" . }}
+  name: {{ include "dataplane.fullname" . }}
   labels:
-    {{- include "metabase.labels" . | nindent 4 }}
+    {{- include "dataplane.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "metabase.selectorLabels" . | nindent 6 }}
+      {{- include "dataplane.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "metabase.selectorLabels" . | nindent 8 }}
+        {{- include "dataplane.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -54,21 +54,21 @@ spec:
             - name: "MB_DB_TYPE"
               value: "postgres"
             - name: "MB_DB_HOST"
-              value: {{ include "metabase.db.cluster" . }}
+              value: {{ include "dataplane.metabase.cluster" . }}
             - name: "MB_DB_USER"
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "metabase.db.secret" . }}
+                  name: {{ include "dataplane.metabase.secret" . }}
                   key: username
             - name: "MB_DB_USER"
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "metabase.db.secret" . }}
+                  name: {{ include "dataplane.metabase.secret" . }}
                   key: username
             - name: "MB_DB_PASS"
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "metabase.db.secret" . }}
+                  name: {{ include "dataplane.metabase.secret" . }}
                   key: password
           {{- with .Values.podEnvironmentVars }}
             {{- toYaml . | nindent 12 }}

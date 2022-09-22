@@ -48,13 +48,14 @@ provisioner:
           kind_release_tag: latest
 
           # test vardefs
-          dataplane_src_namespace: dataplane
-          dataplane_src_team: pagila
-          dataplane_src_user: metabase
-          dataplane_src_db: db
+          dataplane_pagila_namespace: dataplane
+          dataplane_pagila_team: pagila
+          dataplane_pagila_user: metabase
+          dataplane_pagila_db: db
 
           # dataplane vardefs
           dataplane_namespace: dataplane
+          dataplane_chart: dataplane
           dataplane_path: ${MOLECULE_PROJECT_DIRECTORY}
           dataplane_metabase_hostname: "metabase.{{ k8s_cluster_name }}"
 

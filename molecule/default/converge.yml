@@ -14,7 +14,7 @@
     - name: deploy metabase helm chart
       kubernetes.core.helm:
         state: present
-        name: metabase
+        name: "{{ dataplane_chart }}"
         chart_ref: "{{ dataplane_path }}/charts/metabase"
         release_namespace: "{{ dataplane_namespace }}"
         create_namespace: true
@@ -22,6 +22,10 @@
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
         values:
+          zalando:
+            metabase:
+              loadBalancer: true
+              allowedSourceRanges: 0.0.0.0/0
           ingress:
             enabled: true
             className: nginx-private
@@ -39,10 +43,10 @@
           apiVersion: acid.zalan.do/v1
           kind: postgresql
           metadata:
-            name: {{ dataplane_src_team }}-{{ dataplane_src_db }}
-            namespace: {{ dataplane_src_namespace }}
+            name: {{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}
+            namespace: {{ dataplane_pagila_namespace }}
           spec:
-            teamId: {{ dataplane_src_team }}
+            teamId: {{ dataplane_pagila_team }}
             volume:
               size: 1Gi
             numberOfInstances: 2
@@ -55,11 +59,11 @@
               admin:
                 - superuser
                 - createdb
-              {{ dataplane_src_user }}:
+              {{ dataplane_pagila_user }}:
                 - superuser
                 - createdb
             databases:
-              {{ dataplane_src_db }}: {{ dataplane_src_user }}
+              {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}
             postgresql:
               version: "13"
 
@@ -68,12 +72,12 @@
         pagila_src_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
         pagila_src_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
       vars:
-        pagila_db_secret_name: "{{ dataplane_src_user }}-{{ dataplane_src_team }}-{{ dataplane_src_db }}"
+        pagila_db_secret_name: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
         pagila_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', pagila_db_secret_name) | first }}"
         secret_query: "{{
           query(
             'kubernetes.core.k8s',
-            namespace=dataplane_src_namespace,
+            namespace=dataplane_pagila_namespace,
             kind='Secret',
             kubeconfig=k8s_kubeconfig
           )
@@ -83,12 +87,12 @@
       ansible.builtin.set_fact:
         pagila_src_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
       vars:
-        pagila_db_svc_name: "{{ dataplane_src_team }}-{{ dataplane_src_db }}"
+        pagila_db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
         pagila_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', pagila_db_svc_name) | first }}"
         service_query: "{{
           query(
             'kubernetes.core.k8s',
-            namespace=dataplane_src_namespace,
+            namespace=dataplane_pagila_namespace,
             kind='Service',
             kubeconfig=k8s_kubeconfig
           )
@@ -114,7 +118,7 @@
 
     - name: drop database
       community.postgresql.postgresql_db:
-        name: "{{ dataplane_src_db }}"
+        name: "{{ dataplane_pagila_db }}"
         state: absent
         login_user: "{{ pagila_src_user }}"
         login_password: "{{ pagila_src_pass }}"
@@ -122,7 +126,7 @@
 
     - name: create database
       community.postgresql.postgresql_db:
-        name: "{{ dataplane_src_db }}"
+        name: "{{ dataplane_pagila_db }}"
         state: present
         login_user: "{{ pagila_src_user }}"
         login_password: "{{ pagila_src_pass }}"
@@ -154,7 +158,7 @@
 
         - name: load pagila db data
           community.postgresql.postgresql_db:
-            name: "{{ dataplane_src_db }}"
+            name: "{{ dataplane_pagila_db }}"
             state: restore
             login_user: "{{ pagila_src_user }}"
             login_password: "{{ pagila_src_pass }}"

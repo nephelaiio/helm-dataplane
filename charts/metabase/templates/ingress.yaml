@@ -1,7 +1,7 @@
 ---
 {{- if .Values.ingress.enabled -}}
-{{- $fullName := include "metabase.fullname" . -}}
-{{- $secretName := include "metabase.ingress.secretName" . -}}
+{{- $fullName := include "dataplane.fullname" . -}}
+{{- $secretName := include "dataplane.ingress.secretName" . -}}
 {{- $svcPort := .Values.service.port -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
@@ -19,7 +19,7 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "metabase.labels" . | nindent 4 }}
+    {{- include "dataplane.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

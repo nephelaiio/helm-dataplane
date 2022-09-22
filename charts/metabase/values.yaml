@@ -32,13 +32,25 @@ ingress:
   secretName: ""
 
 zalando:
-  db:
-    name: db
+  metabase:
+    name: metabase
     version: 14
     loadBalancer: false
     instances: 2
     volume: 10Gi
-    serviceAnnotations: []
+    serviceAnnotations: {}
+    allowedSourceRanges:
+      - 127.0.0.1
+    user: metabase
+  warehouse:
+    name: warehouse
+    version: 14
+    loadBalancer: false
+    instances: 2
+    volume: 10Gi
+    serviceAnnotations: {}
+    allowedSourceRanges:
+      - 127.0.0.1
     user: metabase
 
 resources: {}
