@@ -15,7 +15,7 @@
       kubernetes.core.helm:
         state: present
         name: "{{ dataplane_chart }}"
-        chart_ref: "{{ dataplane_path }}/charts/metabase"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
         release_namespace: "{{ dataplane_namespace }}"
         create_namespace: true
         wait: true

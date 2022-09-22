@@ -1,0 +1,28 @@
+---
+apiVersion: acid.zalan.do/v1
+kind: postgresql
+metadata:
+  name: {{ include "dataplane.metabase.cluster" . }}
+spec:
+  teamId: {{ include "dataplane.zalando.team" . }}
+  volume:
+    size: {{ .Values.zalando.metabase.volume }}
+  numberOfInstances: {{ .Values.zalando.metabase.instances }}
+  allowedSourceRanges:
+  {{- with .Values.zalando.metabase.allowedSourceRanges }}
+    - {{ . }}
+  {{- end }}
+  enableMasterLoadBalancer: {{ .Values.zalando.metabase.loadBalancer }}
+  {{- with .Values.zalando.metabase.serviceAnnotations }}
+  serviceAnnotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  users:
+    admin:
+      - superuser
+      - createdb
+    {{ .Values.zalando.metabase.user }}: []
+  databases:
+    metabase: {{ .Values.zalando.metabase.user }}
+  postgresql:
+    version: "{{ .Values.zalando.metabase.version }}"
