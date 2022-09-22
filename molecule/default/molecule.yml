@@ -24,7 +24,6 @@ provisioner:
 
           # k8s vardefs
           k8s_kubeconfig: ${MOLECULE_EPHEMERAL_DIRECTORY}/config
-          k8s_certmanager_issuer: local
           k8s_certmanager_issuer_name: local
           k8s_cluster_name: molecule.nephelai.io
           k8s_address_pools:
