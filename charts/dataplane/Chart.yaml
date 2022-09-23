@@ -1,6 +1,6 @@
 ---
 apiVersion: v2
-name: metabase
+name: dataplane
 description: A Helm chart to deploy and configure Metabase
 
 # A chart can be either an 'application' or a 'library' chart.

@@ -6,6 +6,13 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+Release name
+*/}}
+{{- define "dataplane.release" -}}
+{{- default .Release.Name .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -47,7 +54,7 @@ Selector labels
 */}}
 {{- define "dataplane.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "dataplane.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/instance: {{ include "dataplane.release" . }}
 {{- end }}
 
 {{/*
@@ -65,7 +72,7 @@ Create the name of the service account to use
 DB team name
 */}}
 {{- define "dataplane.zalando.team" -}}
-{{- include "dataplane.name" . -}}
+{{- include "dataplane.release" . -}}
 {{- end }}
 
 {{/*
@@ -125,7 +132,7 @@ TLS secret name
 API secret name
 */}}
 {{- define "dataplane.metabase.api.secret.name" -}}
-{{- (printf "%s-%s" (include "dataplane.name" .) "metabase-api-token") -}}
+{{- (printf "%s-%s" (include "dataplane.release" .) "metabase-api-token") -}}
 {{- end }}
 
 {{/*

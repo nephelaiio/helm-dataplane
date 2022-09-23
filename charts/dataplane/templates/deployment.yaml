@@ -60,11 +60,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "dataplane.metabase.secret" . }}
                   key: username
-            - name: "MB_DB_USER"
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "dataplane.metabase.secret" . }}
-                  key: username
             - name: "MB_DB_PASS"
               valueFrom:
                 secretKeyRef:

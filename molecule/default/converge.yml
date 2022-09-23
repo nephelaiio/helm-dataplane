@@ -102,7 +102,8 @@
       ansible.builtin.fail:
         msg: "zalando clusters failed to come up on time"
       vars:
-        cluster_failed: "{{ cluster_query | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
+        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
+        cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
         cluster_query: "{{
           query(
             'kubernetes.core.k8s',
@@ -114,7 +115,9 @@
       retries: 12
       delay: 30
       until: cluster_failed | length == 0
-      failed_when: cluster_failed | length > 0
+      failed_when:
+        - (cluster_status | length) != (cluster_query | length)
+        - cluster_failed | length > 0
 
     - name: drop database
       community.postgresql.postgresql_db:
