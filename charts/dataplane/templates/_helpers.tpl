@@ -62,6 +62,13 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+DB team name
+*/}}
+{{- define "dataplane.zalando.team" -}}
+{{- include "dataplane.name" . -}}
+{{- end }}
+
+{{/*
 Metabase cluster name
 */}}
 {{- define "dataplane.metabase.cluster" -}}
@@ -76,17 +83,31 @@ Metabase DB name
 {{- end }}
 
 {{/*
-DB team name
-*/}}
-{{- define "dataplane.zalando.team" -}}
-{{- include "dataplane.fullname" . -}}
-{{- end }}
-
-{{/*
 Metabase DB user secret
  */}}
 {{- define "dataplane.metabase.secret" -}}
 {{ .Values.zalando.metabase.user }}-{{- include "dataplane.metabase.cluster" . -}}
+{{- end }}
+
+{{/*
+Warehouse cluster name
+*/}}
+{{- define "dataplane.warehouse.cluster" -}}
+{{- (printf "%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.warehouse.db" .)) -}}
+{{- end }}
+
+{{/*
+Warehouse DB name
+*/}}
+{{- define "dataplane.zalando.warehouse.db" -}}
+{{ .Values.zalando.warehouse.name }}
+{{- end }}
+
+{{/*
+Warehouse DB user secret
+ */}}
+{{- define "dataplane.warehouse.secret" -}}
+{{ .Values.zalando.warehouse.user }}-{{- include "dataplane.warehouse.cluster" . -}}
 {{- end }}
 
 {{/*
@@ -103,15 +124,15 @@ TLS secret name
 {{/*
 API secret name
 */}}
-{{- define "dataplane.apiSecretName" -}}
-{{- (printf "%s-%s" (include "dataplane.fullname" .) "api-token") -}}
+{{- define "dataplane.metabase.api.secret.name" -}}
+{{- (printf "%s-%s" (include "dataplane.name" .) "metabase-api-token") -}}
 {{- end }}
 
 {{/*
 Stable API secret data
 */}}
 {{- define "dataplane.metabase.api.secret" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.apiSecretName" .) -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.metabase.api.secret.name" .) -}}
 {{- if $secret -}}
 {{/*
    Reusing existing secret data
