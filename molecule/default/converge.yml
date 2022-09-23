@@ -26,6 +26,9 @@
             metabase:
               loadBalancer: true
               allowedSourceRanges: 0.0.0.0/0
+            warehouse:
+              loadBalancer: true
+              allowedSourceRanges: 0.0.0.0/0
           ingress:
             enabled: true
             className: nginx-private

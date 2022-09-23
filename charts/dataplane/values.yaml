@@ -51,7 +51,7 @@ zalando:
     serviceAnnotations: {}
     allowedSourceRanges:
       - 127.0.0.1
-    user: metabase
+    user: strimzi
 
 resources: {}
 

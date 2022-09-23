@@ -10,12 +10,26 @@ ROLE_NAME := $$(pwd | xargs basename)
 SCENARIO_NAME := default
 EPHEMERAL_DIR := $$HOME/.cache/molecule/$(ROLE_NAME)/$(SCENARIO_NAME)
 
-PAGILA_SRC_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_db' molecule/default/molecule.yml -r)
-PAGILA_SRC_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_namespace' molecule/default/molecule.yml -r)
-PAGILA_SRC_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_team' molecule/default/molecule.yml -r)
-PAGILA_SRC_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_user' molecule/default/molecule.yml -r)
-PAGILA_SRC_PASS := $$(make --no-print-directory kubectl get secret $(PAGILA_SRC_USER)-$(PAGILA_SRC_TEAM)-$(PAGILA_SRC_DB) -- -n $(PAGILA_SRC_NS) -o json | jq '.data.password' -r | base64 -d )
-PAGILA_SRC_HOST := $$(make --no-print-directory kubectl get service -- -n $(PAGILA_SRC_NS) -o json | jq ".items | map(select(.metadata.name == \"$(PAGILA_SRC_TEAM)-$(PAGILA_SRC_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
+PAGILA_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_db' molecule/default/molecule.yml -r)
+PAGILA_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_namespace' molecule/default/molecule.yml -r)
+PAGILA_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_team' molecule/default/molecule.yml -r)
+PAGILA_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_user' molecule/default/molecule.yml -r)
+PAGILA_PASS := $$(make --no-print-directory kubectl get secret $(PAGILA_USER)-$(PAGILA_TEAM)-$(PAGILA_DB) -- -n $(PAGILA_NS) -o json | jq '.data.password' -r | base64 -d )
+PAGILA_HOST := $$(make --no-print-directory kubectl get service -- -n $(PAGILA_NS) -o json | jq ".items | map(select(.metadata.name == \"$(PAGILA_TEAM)-$(PAGILA_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
+
+METABASE_DB := metabase
+METABASE_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_namespace' molecule/default/molecule.yml -r)
+METABASE_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_chart' molecule/default/molecule.yml -r)
+METABASE_USER := metabase
+METABASE_PASS := $$(make --no-print-directory kubectl get secret $(METABASE_USER)-$(METABASE_TEAM)-$(METABASE_DB) -- -n $(METABASE_NS) -o json | jq '.data.password' -r | base64 -d )
+METABASE_HOST := $$(make --no-print-directory kubectl get service -- -n $(METABASE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(METABASE_TEAM)-$(METABASE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
+
+WAREHOUSE_DB := warehouse
+WAREHOUSE_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_namespace' molecule/default/molecule.yml -r)
+WAREHOUSE_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_chart' molecule/default/molecule.yml -r)
+WAREHOUSE_USER := strimzi
+WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
+WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
 .PHONY: poetry run helm kubectl psql test create prepare converge verify destroy cleanup clean
 
@@ -38,10 +52,16 @@ poetry:
 	@poetry install
 
 pagila:
-	PGPASSWORD=$(PAGILA_SRC_PASS) psql -h $(PAGILA_SRC_HOST) -U $(PAGILA_SRC_USER) $(PAGILA_SRC_DB)
+	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
+
+metabase:
+	PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) $(METABASE_DB)
+
+warehouse:
+	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
 
 molecule:
-	PGPASSWORD=$(PAGILA_SRC_PASS) psql -h $(PAGILA_SRC_HOST) -U $(PAGILA_SRC_USER) $(PAGILA_SRC_DB)
+	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
 
 --verbose -v:
 	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run -vvv molecule $(filter-out $@,$(MAKECMDGOALS))

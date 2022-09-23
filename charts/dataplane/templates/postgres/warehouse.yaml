@@ -1,0 +1,28 @@
+---
+apiVersion: acid.zalan.do/v1
+kind: postgresql
+metadata:
+  name: {{ include "dataplane.warehouse.cluster" . }}
+spec:
+  teamId: {{ include "dataplane.zalando.team" . }}
+  volume:
+    size: {{ .Values.zalando.warehouse.volume }}
+  numberOfInstances: {{ .Values.zalando.warehouse.instances }}
+  allowedSourceRanges:
+  {{- with .Values.zalando.warehouse.allowedSourceRanges }}
+    - {{ . }}
+  {{- end }}
+  enableMasterLoadBalancer: {{ .Values.zalando.warehouse.loadBalancer }}
+  {{- with .Values.zalando.warehouse.serviceAnnotations }}
+  serviceAnnotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  users:
+    admin:
+      - superuser
+      - createdb
+    {{ .Values.zalando.warehouse.user }}: []
+  databases:
+    warehouse: {{ .Values.zalando.warehouse.user }}
+  postgresql:
+    version: "{{ .Values.zalando.warehouse.version }}"
