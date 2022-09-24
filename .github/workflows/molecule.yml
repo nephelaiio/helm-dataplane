@@ -54,10 +54,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        release:
-          - v0.15.0
-        image:
-          - v1.24.4
+        include:
+          - release: v0.15.0
+            image: v1.24.4
+          - release: v0.15.0
+            image: v1.23.10
     steps:
       - name: check out the codebase.
         uses: actions/checkout@v2

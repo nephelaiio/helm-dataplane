@@ -4,11 +4,11 @@
 # @file
 # @version 0.0.1
 
-KIND_RELEASE := $$(yq eval '.jobs.molecule.strategy.matrix.release| sort | reverse | .[0]' .github/workflows/main.yml)
-KIND_IMAGE := $$(yq eval '.jobs.molecule.strategy.matrix.image | sort | reverse | .[0]' .github/workflows/main.yml)
+KIND_RELEASE := $$(yq eval '.jobs.molecule.strategy.matrix.include[0].release ' .github/workflows/molecule.yml)
+K8S_RELEASE := $$(yq eval '.jobs.molecule.strategy.matrix.include[0].image' .github/workflows/molecule.yml)
 ROLE_NAME := $$(pwd | xargs basename)
-SCENARIO_NAME := default
-EPHEMERAL_DIR := $$HOME/.cache/molecule/$(ROLE_NAME)/$(SCENARIO_NAME)
+SCENARIO ?= default
+EPHEMERAL_DIR := $$HOME/.cache/molecule/$(ROLE_NAME)/$(SCENARIO)
 
 PAGILA_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_db' molecule/default/molecule.yml -r)
 PAGILA_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_namespace' molecule/default/molecule.yml -r)
@@ -31,13 +31,13 @@ WAREHOUSE_USER := strimzi
 WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
 WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-.PHONY: poetry run helm kubectl psql test create prepare converge verify destroy cleanup clean
+.PHONY: poetry run helm kubectl psql molecule
 
 clean:
 	rm -rf /home/teddyphreak/.cache/ansible-compat/*
 
-test create prepare converge verify destroy cleanup: poetry clean
-	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $@
+molecule: poetry clean
+	KIND_RELEASE=$(KIND_RELEASE) K8S_RELEASE=$(K8S_RELEASE) poetry run molecule $(filter-out $@,$(MAKECMDGOALS)) -s $(SCENARIO)
 
 run:
 	$(EPHEMERAL_DIR)/bwrap $(filter-out $@,$(MAKECMDGOALS))
@@ -62,9 +62,6 @@ warehouse:
 
 molecule:
 	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
-
---verbose -v:
-	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run -vvv molecule $(filter-out $@,$(MAKECMDGOALS))
 
 %:
 	@:
