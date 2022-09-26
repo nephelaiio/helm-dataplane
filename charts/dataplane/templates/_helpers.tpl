@@ -76,6 +76,15 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+Create strimzi fully qualified broker name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "dataplane.strimzi.broker.fullname" -}}
+{{- printf "%s-%s-%s" (include "dataplane.fullname" .) "strimzi" "broker"  | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 DB team name
 */}}
 {{- define "dataplane.zalando.team" -}}
