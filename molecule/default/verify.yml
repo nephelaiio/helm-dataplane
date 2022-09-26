@@ -9,6 +9,8 @@
 
     k8s_deploy: false
     k8s_verify: true
+    k8s_strimzi_verify: false
+    k8s_volume_verify: false
 
   roles:
 

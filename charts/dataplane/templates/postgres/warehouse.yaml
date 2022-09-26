@@ -1,4 +1,5 @@
 ---
+{{- if (gt (int .Values.zalando.warehouse.instances) 0) }}
 apiVersion: acid.zalan.do/v1
 kind: postgresql
 metadata:
@@ -26,3 +27,4 @@ spec:
     warehouse: {{ .Values.zalando.warehouse.user }}
   postgresql:
     version: "{{ .Values.zalando.warehouse.version }}"
+{{- end }}

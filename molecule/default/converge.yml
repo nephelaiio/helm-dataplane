@@ -39,12 +39,13 @@
               instances: 1
               loadBalancer: true
               allowedSourceRanges: 0.0.0.0/0
-          ingress:
-            enabled: true
-            className: nginx-private
-            hostName: "{{ dataplane_metabase_hostname }}"
-            annotations:
-              cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
+          metabase:
+            ingress:
+              enabled: true
+              className: nginx-private
+              hostName: "{{ dataplane_metabase_hostname }}"
+              annotations:
+                cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
 
     - name: deploy source postgresql db
       kubernetes.core.k8s:
