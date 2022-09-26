@@ -23,9 +23,9 @@ If release name contains chart name it will be used as a full name.
 {{- else }}
 {{- $name := default .Chart.Name .Values.nameOverride }}
 {{- if contains $name .Release.Name }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- .Release.Name | trunc 30 | trimSuffix "-" }}
 {{- else }}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" .Release.Name $name | trunc 30 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -58,6 +58,24 @@ app.kubernetes.io/instance: {{ include "dataplane.release" . }}
 {{- end }}
 
 {{/*
+Create metabase fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "dataplane.metabase.fullname" -}}
+{{- printf "%s-%s-%s" (include "dataplane.fullname" .) "metabase" "app"  | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create schema fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "dataplane.schema.fullname" -}}
+{{- printf "%s-%s-%s" (include "dataplane.fullname" .) "schema" "app"  | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 DB team name
 */}}
 {{- define "dataplane.zalando.team" -}}
@@ -68,7 +86,7 @@ DB team name
 Metabase cluster name
 */}}
 {{- define "dataplane.metabase.cluster" -}}
-{{- (printf "%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.metabase.db" .)) -}}
+{{- (printf "%s-%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.metabase.db" .) "db") -}}
 {{- end }}
 
 {{/*
@@ -89,7 +107,7 @@ Metabase DB user secret
 Warehouse cluster name
 */}}
 {{- define "dataplane.warehouse.cluster" -}}
-{{- (printf "%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.warehouse.db" .)) -}}
+{{- (printf "%s-%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.warehouse.db" .) "db") -}}
 {{- end }}
 
 {{/*

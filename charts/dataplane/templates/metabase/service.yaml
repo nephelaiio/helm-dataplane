@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "dataplane.fullname" . }}
+  name: {{ include "dataplane.metabase.fullname" . }}
   labels:
     {{- include "dataplane.labels" . | nindent 4 }}
 spec:

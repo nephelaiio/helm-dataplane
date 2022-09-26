@@ -14,3 +14,9 @@
 
     - nephelaiio.plugins
     - nephelaiio.k8s
+
+  tasks:
+
+    - name: install postgresql binary
+      ansible.builtin.package:
+        name: postgresql-client

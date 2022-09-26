@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "dataplane.fullname" . }}
+  name: {{ include "dataplane.metabase.fullname" . }}
   labels:
     {{- include "dataplane.labels" . | nindent 4 }}
 spec:
