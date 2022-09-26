@@ -11,6 +11,14 @@
 
   tasks:
 
+    - name: create metabase namespace
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        api_version: v1
+        kind: Namespace
+        name: "{{ dataplane_namespace }}"
+
     - name: deploy metabase helm chart
       kubernetes.core.helm:
         state: present
@@ -24,9 +32,11 @@
         values:
           zalando:
             metabase:
+              instances: 1
               loadBalancer: true
               allowedSourceRanges: 0.0.0.0/0
             warehouse:
+              instances: 1
               loadBalancer: true
               allowedSourceRanges: 0.0.0.0/0
           ingress:
@@ -52,14 +62,14 @@
             teamId: {{ dataplane_pagila_team }}
             volume:
               size: 1Gi
-            numberOfInstances: 2
+            numberOfInstances: 1
             allowedSourceRanges:
               - 0.0.0.0/0
             enableMasterLoadBalancer: true
             serviceAnnotations:
               metallb.universe.tf/address-pool: private
             users:
-              admin:
+              zalando:
                 - superuser
                 - createdb
               {{ dataplane_pagila_user }}:
@@ -69,6 +79,27 @@
               {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}
             postgresql:
               version: "13"
+
+    - name: wait for database cluster startup
+      ansible.builtin.fail:
+        msg: "zalando clusters failed to come up on time"
+      vars:
+        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
+        cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
+        cluster_query: "{{
+          query(
+            'kubernetes.core.k8s',
+            api_version='acid.zalan.do/v1',
+            kind='postgresql',
+            kubeconfig=k8s_kubeconfig
+          )
+        }}"
+      retries: 10
+      delay: 30
+      until: cluster_failed | length == 0
+      failed_when:
+        - (cluster_status | length) != (cluster_query | length)
+        - cluster_failed | length > 0
 
     - name: query connection data
       ansible.builtin.set_fact:
@@ -100,27 +131,6 @@
             kubeconfig=k8s_kubeconfig
           )
         }}"
-
-    - name: wait for database cluster startup
-      ansible.builtin.fail:
-        msg: "zalando clusters failed to come up on time"
-      vars:
-        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
-        cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
-        cluster_query: "{{
-          query(
-            'kubernetes.core.k8s',
-            api_version='acid.zalan.do/v1',
-            kind='postgresql',
-            kubeconfig=k8s_kubeconfig
-          )
-        }}"
-      retries: 12
-      delay: 30
-      until: cluster_failed | length == 0
-      failed_when:
-        - (cluster_status | length) != (cluster_query | length)
-        - cluster_failed | length > 0
 
     - name: drop database
       community.postgresql.postgresql_db:

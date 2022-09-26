@@ -8,18 +8,75 @@
   roles:
 
     - nephelaiio.plugins
-    - nephelaiio.kind
 
   pre_tasks:
 
-    - name: manage docker kind network
-      community.docker.docker_network:
-        name: "kind"
-        enable_ipv6: false
-        ipam_config:
-          - subnet: "{{ docker_net_addr }}"
-            gateway: "{{ docker_net_addr | ipaddr(1) | ipaddr('address') }}"
-            iprange: "{{ kind_net_addr }}"
+    - name: deploy kind cluster
+      block:
+
+        - name: manage docker kind network
+          community.docker.docker_network:
+            name: "kind"
+            enable_ipv6: false
+            ipam_config:
+              - subnet: "{{ docker_net_addr }}"
+                gateway: "{{ docker_net_addr | ipaddr(1) | ipaddr('address') }}"
+                iprange: "{{ kind_net_addr }}"
+
+        - name: deploy kind cluster
+          ansible.builtin.include_role:
+            name: nephelaiio.kind
+          vars:
+            kind_image_tag: "{{ lookup('env', 'K8S_RELEASE') }}"
+
+      when: k8s_molecule_cluster_type == 'kind'
+
+    - name: deploy k3s cluster
+      block:
+
+        - name: create k3s tempdir
+          ansible.builtin.tempfile:
+            state: directory
+            prefix: "k3s_"
+          register: tempdir
+
+        - name: retrieve k3s installer
+          ansible.builtin.get_url:
+            url: https://get.k3s.io
+            dest: "{{ tempdir.path }}/k3s"
+            mode: 0755
+
+        - name: deploy k3s cluster
+          ansible.builtin.command: "{{ tempdir.path }}/k3s --disable=traefik"
+          vars:
+            k3s_version: "{{ lookup('env', 'K8S_RELEASE') }}+k3s1"
+          environment:
+            INSTALL_K3S_VERSION: "{{ k3s_version }}"
+          become: true
+
+        - name: install iscsi tools
+          ansible.builtin.package:
+            name: open-iscsi
+          become: yes
+
+        - name: copy k3s kubeconfig
+          ansible.builtin.copy:
+            src: "/etc/rancher/k3s/k3s.yaml"
+            dest: "{{ k8s_kubeconfig }}"
+            remote_src: true
+            owner: "{{ ansible_user }}"
+            group: "{{ ansible_user }}"
+            mode: 0600
+          vars:
+            ansible_user: "{{ lookup('env', 'USER') }}"
+          become: true
+
+        - name: remove k3s tempdir
+          ansible.builtin.file:
+            path: "{{ tempdir.path }}"
+            state: absent
+
+      when: k8s_molecule_cluster_type == 'k3s'
 
     - name: set helm release metadata
       block:
