@@ -58,17 +58,6 @@ app.kubernetes.io/instance: {{ include "dataplane.release" . }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
-*/}}
-{{- define "dataplane.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "dataplane.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{/*
 DB team name
 */}}
 {{- define "dataplane.zalando.team" -}}
@@ -120,9 +109,9 @@ Warehouse DB user secret
 {{/*
 TLS secret name
 */}}
-{{- define "dataplane.ingress.secretName" -}}
-{{- if .Values.ingress.secretName }}
-{{- .Values.ingress.secretName }}
+{{- define "dataplane.metabase.ingress.secretName" -}}
+{{- if .Values.metabase.ingress.secretName }}
+{{- .Values.metabase.ingress.secretName }}
 {{- else }}
 {{- (printf "%s-%s" (include "dataplane.fullname" .) "tls") -}}
 {{- end }}

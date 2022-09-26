@@ -1,5 +1,5 @@
 ---
-{{- $svcPort := .Values.service.port -}}
+{{- $svcPort := .Values.metabase.service.port -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,13 +7,13 @@ metadata:
   labels:
     {{- include "dataplane.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.metabase.replicaCount }}
   selector:
     matchLabels:
       {{- include "dataplane.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with .Values.metabase.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -25,13 +25,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.metabase.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+            {{- toYaml .Values.metabase.securityContext | nindent 12 }}
+          image: "{{ .Values.metabase.image.repository }}:{{ .Values.metabase.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.metabase.image.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ $svcPort }}
@@ -45,10 +45,10 @@ spec:
               path: /
               port: http
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.metabase.resources | nindent 12 }}
           env:
             - name: "MB_SITE_URL"
-              value: "https://{{ .Values.ingress.hostName }}"
+              value: "https://{{ .Values.metabase.ingress.hostName }}"
             - name: "MB_SITE_LOCALE"
               value: "en"
             - name: "MB_DB_TYPE"
@@ -65,18 +65,18 @@ spec:
                 secretKeyRef:
                   name: {{ include "dataplane.metabase.secret" . }}
                   key: password
-          {{- with .Values.podEnvironmentVars }}
+          {{- with .Values.metabase.podEnvironmentVars }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.metabase.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.metabase.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with .Values.metabase.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

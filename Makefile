@@ -38,7 +38,7 @@ WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREH
 clean:
 	find /home/teddyphreak/.cache/ansible-compat/ -type l -wholename "*roles/*" | xargs -r rm -f
 
-molecule: poetry clean
+molecule: clean poetry
 	KIND_RELEASE=$(KIND_RELEASE) K8S_RELEASE=$(K8S_RELEASE) poetry run molecule $(filter-out $@,$(MAKECMDGOALS)) -s $(SCENARIO)
 
 run:

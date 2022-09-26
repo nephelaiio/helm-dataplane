@@ -1,37 +1,10 @@
 ---
-replicaCount: 2
-
-image:
-  repository: metabase/metabase
-  pullPolicy: IfNotPresent
-  tag: ""
-
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-podAnnotations: {}
-
-podSecurityContext: {}
-
-podEnvironmentVars:
-  - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
-    value: "true"
-
-securityContext: {}
-
-service:
-  type: ClusterIP
-  port: 3000
-
-ingress:
-  enabled: false
-  annotations: {}
-  hostName: ""
-  className: ""
-  secretName: ""
-
 zalando:
+
   metabase:
     name: metabase
     version: 14
@@ -42,6 +15,7 @@ zalando:
     allowedSourceRanges:
       - 127.0.0.1
     user: metabase
+
   warehouse:
     name: warehouse
     version: 14
@@ -53,10 +27,40 @@ zalando:
       - 127.0.0.1
     user: strimzi
 
-resources: {}
+metabase:
 
-nodeSelector: {}
+  replicaCount: 2
 
-tolerations: []
+  image:
+    repository: metabase/metabase
+    pullPolicy: IfNotPresent
+    tag: ""
 
-affinity: {}
+  ingress:
+    enabled: false
+    annotations: {}
+    hostName: ""
+    className: ""
+    secretName: ""
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  podEnvironmentVars:
+    - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
+      value: "true"
+
+  securityContext: {}
+
+  podSecurityContext: {}
+
+  podAnnotations: {}
+
+  resources: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
