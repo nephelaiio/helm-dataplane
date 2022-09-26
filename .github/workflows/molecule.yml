@@ -55,6 +55,8 @@ jobs:
     strategy:
       matrix:
         include:
+          - release: v0.16.0
+            image: v1.24.6
           - release: v0.15.0
             image: v1.24.4
           - release: v0.15.0
