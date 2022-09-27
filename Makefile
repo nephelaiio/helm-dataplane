@@ -33,7 +33,7 @@ WAREHOUSE_USER := strimzi
 WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
 WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-.PHONY: poetry clean molecule run helm kubectl psql docker
+.PHONY: poetry clean molecule run helm kubectl psql docker dataplane
 
 clean:
 	find /home/teddyphreak/.cache/ansible-compat/ -type l -wholename "*roles/*" | xargs -r rm -f
@@ -64,6 +64,9 @@ warehouse:
 
 build:
 	docker build --rm --tag "dataplane:$(GIT_COMMIT)" .
+
+dataplane:
+	@:
 
 %:
 	@:

@@ -1,43 +1,48 @@
+{{- $brokerCount := (int .Values.strimzi.kafka.brokers) }}
+{{- $kafkaAnnotations := .Values.strimzi.kafka.annotations }}
+{{- $externalAnnotations := .Values.strimzi.kafka.listener.external.annotations }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
-  name: {{ include "dataplane.strimzi.broker.fullname" . }}
+  name: {{ include "dataplane.strimzi.kafka.fullname" . }}
   labels:
     {{- include "dataplane.labels" . | nindent 4 }}
-  {{- with .Values.strimzi.broker.annotations }}
+  {{- with $kafkaAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   kafka:
-    version: {{ .Values.strimzi.broker.version }}
-    replicas: {{ .Values.strimzi.broker.replicas }}
+    version: {{ .Values.strimzi.kafka.version }}
+    replicas: {{ .Values.strimzi.kafka.replicas }}
     listeners:
       - name: plain
-        port: {{ .Values.strimzi.broker.listener.plain }}
+        port: {{ .Values.strimzi.kafka.listener.plain.port }}
         type: internal
         tls: false
       - name: tls
-        port: {{ .Values.strimzi.broker.listener.tls }}
+        port: {{ .Values.strimzi.kafka.listener.tls.port }}
         type: internal
         tls: true
       - name: external
-        port: {{ .Values.strimzi.broker.listener.external }}
+        port: {{ .Values.strimzi.kafka.listener.external.port }}
         type: loadbalancer
         tls: false
         configuration:
           bootstrap:
-            {{- with .Values.strimzi.brokerlisterner.annotations }}
+            {{- with $externalAnnotations }}
             annotations:
               {{- toYaml . | nindent 14 }}
             {{- end }}
           brokers:
-            - broker: 0
-              {{- with .Values.strimzi.brokerlisterner.annotations }}
+            {{- range $i := until $brokerCount }}
+            - broker: {{ $i }}
+              {{- with $externalAnnotations }}
               annotations:
                 {{- toYaml . | nindent 16 }}
               {{- end }}
+            {{- end }}
     config:
       offsets.topic.replication.factor: 1
       transaction.state.log.replication.factor: 1
@@ -50,10 +55,10 @@ spec:
       class: px-replicated
       deleteClaim: false
   zookeeper:
-    replicas: 3
+    replicas: {{ .Values.strimzi.kafka.zookeeper.replicas }}
     storage:
       type: persistent-claim
-      size: 10Gi
+      size: {{ .Values.strimzi.kafka.zookeeper.storage.size }}
       class: px-replicated
       deleteClaim: false
   entityOperator:

@@ -95,7 +95,7 @@
             kubeconfig=k8s_kubeconfig
           )
         }}"
-      retries: 10
+      retries: 15
       delay: 30
       until: cluster_failed | length == 0
       failed_when:

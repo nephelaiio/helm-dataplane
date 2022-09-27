@@ -5,16 +5,23 @@ fullnameOverride: ""
 
 strimzi:
 
-  broker:
+  kafka:
     version: "2.7.0"
     replicas: 3
-    number: 4
+    brokers: 4
     annotations: {}
     listener:
-      plain: 9092
-      tls: 9093
-      externa: 9094
-      annotations: []
+      plain:
+        port: 9092
+      tls:
+        port: 9093
+      external:
+        port: 9094
+        annotations: {}
+    zookeeper:
+      replicas: 3
+      storage:
+        size: 10Gi
 
 zalando:
 
