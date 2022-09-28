@@ -3,12 +3,12 @@
 [![Build Status](https://github.com/nephelaiio/helm-dataplane/workflows/Molecule/badge.svg)](https://github.com/nephelaiio/helm-dataplane/actions)
 
 A helm chart to deploy a CDC replication stack integrating the following components
-* Strimzi Kafka Broker [Complete]
-* Strimzi Kafka Connect [In Progress]
+* Strimzi Kafka Broker
+* Zalando PostgreSQL Data Warehouse
+* Metabase Data Reporting
 * Strimzi Kafka Schema Registry [In Progress]
+* Strimzi Kafka Connect [In Progress]
 * Apache Flink [Planned]
-* Zalando PostgreSQL Data Warehouse [Complete]
-* Metabase Data Reporting [Complete]
 
 ## TODO
 In order of priority
@@ -26,8 +26,9 @@ Chart depends on the following cluster levels components being deployed in the t
 * Zalando
 * Ingress controller
 
-## Testing
+Dependencies are provisioned with 
 
+## Testing
 Testing is performed using molecule against a local single-node kind cluster using Github Actions and can be replicated locally for the latest supported cluster version using the following commands:
 
 ``` sh
@@ -41,6 +42,3 @@ Or as a single command
 make molecule test
 ```
 
-`
-
-`
