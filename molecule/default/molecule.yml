@@ -4,10 +4,13 @@ dependency:
   options:
     role-file: requirements.yml
     requirements-file: requirements.yml
+
 platforms:
   - name: localhost
+
 driver:
   name: delegated
+
 provisioner:
   name: ansible
   config_options:
@@ -62,3 +65,18 @@ provisioner:
 
 verifier:
   name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - lint
+    - cleanup
+    - prepare
+    - destroy
+    - syntax
+    - create
+    - converge
+    - converge
+    - verify
+    - side_effect
+    - cleanup
+    - destroy
