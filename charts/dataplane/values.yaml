@@ -6,7 +6,7 @@ fullnameOverride: ""
 strimzi:
 
   kafka:
-    version: "2.7.0"
+    version: "3.2.3"
     replicas: 3
     brokers: 4
     annotations: {}
