@@ -30,6 +30,15 @@
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
         values:
+          strimzi:
+            kafka:
+              storage:
+                size: 10Gi
+                class: standard
+            zookeeper:
+              storage:
+                size: 10Gi
+                class: standard
           zalando:
             metabase:
               instances: 1

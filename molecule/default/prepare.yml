@@ -20,3 +20,4 @@
     - name: install postgresql binary
       ansible.builtin.package:
         name: postgresql-client
+      become: yes

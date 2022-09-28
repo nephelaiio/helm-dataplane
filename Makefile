@@ -67,6 +67,9 @@ warehouse:
 build:
 	docker build --rm --tag "dataplane:$(GIT_COMMIT)" .
 
+dataplane:
+	@:
+
 %:
 	@:
 

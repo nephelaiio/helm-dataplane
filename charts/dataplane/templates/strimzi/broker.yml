@@ -1,6 +1,10 @@
 {{- $brokerCount := (int .Values.strimzi.kafka.brokers) }}
 {{- $kafkaAnnotations := .Values.strimzi.kafka.annotations }}
 {{- $externalAnnotations := .Values.strimzi.kafka.listener.external.annotations }}
+{{- $kafkaStorageSize := required "kafka storage size is required" .Values.strimzi.kafka.storage.size }}
+{{- $kafkaStorageClass := required "kafka storage class is required" .Values.strimzi.kafka.storage.class }}
+{{- $zookeeperStorageSize := required "zookeeper storage size is required" .Values.strimzi.zookeeper.storage.size }}
+{{- $zookeeperStorageClass := required "zookeeper storage class is required" .Values.strimzi.zookeeper.storage.class }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
@@ -43,23 +47,21 @@ spec:
                 {{- toYaml . | nindent 16 }}
               {{- end }}
             {{- end }}
+    {{- with .Values.strimzi.kafka.config }}
     config:
-      offsets.topic.replication.factor: 1
-      transaction.state.log.replication.factor: 1
-      transaction.state.log.min.isr: 1
-      log.message.format.version: "2.7"
-      inter.dataplane.protocol.version: "2.7"
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     storage:
       type: persistent-claim
-      size: 200Gi
-      class: px-replicated
+      size: {{ $kafkaStorageSize }}
+      class: {{ $kafkaStorageClass }}
       deleteClaim: false
   zookeeper:
-    replicas: {{ .Values.strimzi.kafka.zookeeper.replicas }}
+    replicas: {{ .Values.strimzi.zookeeper.replicas }}
     storage:
       type: persistent-claim
-      size: {{ .Values.strimzi.kafka.zookeeper.storage.size }}
-      class: px-replicated
+      size: {{ $zookeeperStorageSize }}
+      class: {{ $zookeeperStorageClass }}
       deleteClaim: false
   entityOperator:
     topicOperator: {}

@@ -10,6 +10,7 @@ strimzi:
     replicas: 3
     brokers: 4
     annotations: {}
+    config: {}
     listener:
       plain:
         port: 9092
@@ -18,10 +19,14 @@ strimzi:
       external:
         port: 9094
         annotations: {}
-    zookeeper:
-      replicas: 3
-      storage:
-        size: 10Gi
+    storage:
+      size: 10Gi
+      class: ""
+  zookeeper:
+    replicas: 3
+    storage:
+      size: 10Gi
+      class: ""
 
 zalando:
 
