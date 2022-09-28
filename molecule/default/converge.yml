@@ -11,36 +11,26 @@
 
   tasks:
 
-    - name: wait for strimzi operator startup
-      ansible.builtin.fail:
-        msg: "the following operators are in failed status [{{ operator_failed | join(', ') }}]"
-      vars:
-        operator_failed: "{{ operator_status | rejectattr('status.phase', 'equalto', 'Succeeded') | map(attribute='metadata.name') }}"
-        operator_status: "{{ operator_query | selectattr('status', 'defined') }}"
-        operator_phase: "{{ operator_status | selectattr('status.phase', 'defined') }}"
-        operator_query: "{{
-          query(
-            'kubernetes.core.k8s',
-            api_version='operators.coreos.com/v1alpha1',
-            kind='ClusterServiceVersion',
-            kubeconfig=k8s_kubeconfig
-          )
-        }}"
-      retries: 15
-      delay: 30
-      until: operator_failed | length == 0
-      failed_when:
-        - (operator_status | length) != (operator_query | length)
-        - (operator_phase | length) != (operator_query | length)
-        - operator_failed | length > 0
+    - name: wait for strimzi crd deployment
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: CustomResourceDefinition
+        name: kafkas.kafka.strimzi.io
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        wait: true
+        wait_condition:
+          status: True
+          type: NamesAccepted
+        wait_sleep: 10
+        wait_timeout: 300
 
     - name: create metabase namespace
       kubernetes.core.k8s:
         state: present
-        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
         api_version: v1
         kind: Namespace
         name: "{{ dataplane_namespace }}"
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
 
     - name: deploy metabase helm chart
       kubernetes.core.helm:
