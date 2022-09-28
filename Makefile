@@ -53,7 +53,7 @@ kubectl:
 	@KUBECONFIG=$(EPHEMERAL_DIR)/config kubectl $(filter-out $@,$(MAKECMDGOALS))
 
 poetry:
-	@poetry install
+	@poetry install --no-root
 
 pagila:
 	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
