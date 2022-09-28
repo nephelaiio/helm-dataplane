@@ -70,11 +70,10 @@ scenario:
     - dependency
     - lint
     - cleanup
-    - prepare
     - destroy
     - syntax
     - create
-    - converge
+    - prepare
     - converge
     - verify
     - side_effect
