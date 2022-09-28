@@ -10,11 +10,6 @@ on:
   schedule:
     - cron: "0 5 * * 5"
 
-defaults:
-
-  run:
-    working-directory: 'nephelaiio.k8s-cdc'
-
 jobs:
 
   lint:
@@ -25,28 +20,12 @@ jobs:
 
       - name: check out the codebase
         uses: actions/checkout@v2
-        with:
-          path: 'nephelaiio.k8s-cdc'
 
-      - name: set up python 3
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
 
-      - name: install package requirements
-        run: apt-get install -y python3-dev libpq-dev
-
-      - name: install poetry
-        run: pip3 install poetry
-
-      - name: install pips
-        run: poetry install
-
-      - name: lint code
-        run: |
-          set -e
-          poetry run yamllint .
-          poetry run ansible-lint .
+      - name: lint chart
+        run: helm lint charts/dataplane
 
   molecule:
 
@@ -54,18 +33,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        scenario:
+          - default
         include:
           - release: v0.16.0
             image: v1.24.6
-          - release: v0.15.0
-            image: v1.24.4
-          - release: v0.15.0
-            image: v1.23.10
     steps:
       - name: check out the codebase.
         uses: actions/checkout@v2
-        with:
-          path: 'nephelaiio.k8s-cdc'
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: install helm
+        uses: azure/setup-helm@v3
 
       - name: set up python 3
         uses: actions/setup-python@v2
@@ -79,8 +60,8 @@ jobs:
         run: poetry install
 
       - name: run molecule tests.
-        run: poetry run molecule test
+        run: poetry run molecule test -s ${{ matrix.scenario }}
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
-          KIND_IMAGE: ${{ matrix.image }}
+          K8S_RELEASE: ${{ matrix.image }}

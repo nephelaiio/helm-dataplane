@@ -1,5 +1,5 @@
----
 {{- $svcPort := .Values.metabase.service.port -}}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

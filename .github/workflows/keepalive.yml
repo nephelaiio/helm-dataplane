@@ -1,5 +1,5 @@
 ---
-name: CI Keepalive
+name: Keepalive
 
 on:
   schedule:
