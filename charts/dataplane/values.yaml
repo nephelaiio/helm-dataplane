@@ -1,0 +1,91 @@
+---
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+strimzi:
+
+  kafka:
+    version: "3.2.3"
+    replicas: 3
+    brokers: 4
+    annotations: {}
+    config: {}
+    listener:
+      plain:
+        port: 9092
+      tls:
+        port: 9093
+      external:
+        port: 9094
+        annotations: {}
+    storage:
+      size: 10Gi
+      class: ""
+  zookeeper:
+    replicas: 3
+    storage:
+      size: 10Gi
+      class: ""
+
+zalando:
+
+  metabase:
+    name: metabase
+    version: 14
+    loadBalancer: false
+    instances: 2
+    volume: 10Gi
+    serviceAnnotations: {}
+    allowedSourceRanges:
+      - 127.0.0.1
+    user: metabase
+
+  warehouse:
+    name: warehouse
+    version: 14
+    loadBalancer: false
+    instances: 2
+    volume: 10Gi
+    serviceAnnotations: {}
+    allowedSourceRanges:
+      - 127.0.0.1
+    user: strimzi
+
+metabase:
+
+  replicaCount: 2
+
+  image:
+    repository: metabase/metabase
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  ingress:
+    enabled: false
+    annotations: {}
+    hostName: ""
+    className: ""
+    secretName: ""
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  podEnvironmentVars:
+    - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
+      value: "true"
+
+  securityContext: {}
+
+  podSecurityContext: {}
+
+  podAnnotations: {}
+
+  resources: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}

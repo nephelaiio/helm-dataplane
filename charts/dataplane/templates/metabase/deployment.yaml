@@ -1,0 +1,82 @@
+{{- $svcPort := .Values.metabase.service.port -}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dataplane.metabase.fullname" . }}
+  labels:
+    {{- include "dataplane.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.metabase.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "dataplane.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.metabase.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dataplane.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.metabase.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.metabase.securityContext | nindent 12 }}
+          image: "{{ .Values.metabase.image.repository }}:{{ .Values.metabase.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.metabase.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $svcPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.metabase.resources | nindent 12 }}
+          env:
+            - name: "MB_SITE_URL"
+              value: "https://{{ .Values.metabase.ingress.hostName }}"
+            - name: "MB_SITE_LOCALE"
+              value: "en"
+            - name: "MB_DB_TYPE"
+              value: "postgres"
+            - name: "MB_DB_HOST"
+              value: {{ include "dataplane.metabase.cluster" . }}
+            - name: "MB_DB_USER"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dataplane.metabase.secret" . }}
+                  key: username
+            - name: "MB_DB_PASS"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dataplane.metabase.secret" . }}
+                  key: password
+          {{- with .Values.metabase.podEnvironmentVars }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.metabase.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.metabase.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.metabase.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

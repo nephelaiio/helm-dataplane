@@ -1,0 +1,67 @@
+---
+name: Molecule
+
+on:
+
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "0 5 * * 5"
+
+jobs:
+
+  lint:
+
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: check out the codebase
+        uses: actions/checkout@v2
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: lint chart
+        run: helm lint charts/dataplane
+
+  molecule:
+
+    name: molecule
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scenario:
+          - default
+        include:
+          - release: v0.16.0
+            image: v1.24.6
+    steps:
+      - name: check out the codebase.
+        uses: actions/checkout@v2
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: install helm
+        uses: azure/setup-helm@v3
+
+      - name: set up python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: install poetry
+        run: pip3 install poetry
+
+      - name: install pips
+        run: poetry install
+
+      - name: run molecule tests.
+        run: poetry run molecule test -s ${{ matrix.scenario }}
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+          K8S_RELEASE: ${{ matrix.image }}

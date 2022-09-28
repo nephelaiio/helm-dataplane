@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "nephelaiio.k8s-cdc"
+name = "dataplane"
 version = "0.1.0"
 description = ""
 authors = ["Teodoro Cook <teodoro.cook@gmail.com>"]
@@ -13,12 +13,10 @@ kubernetes = "^24.2.0"
 openshift = "^0.13.1"
 jmespath = "^1.0.1"
 docker = "^6.0.0"
-
-[tool.poetry.group.dev.dependencies]
 ansible = "^6.3.0"
 netaddr = "^0.8.0"
-kubernetes = "^24.2.0"
 MarkupSafe = "2.0.1"
+psycopg2-binary = "^2.9.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

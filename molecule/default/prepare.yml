@@ -5,15 +5,19 @@
 
   gather_facts: false
 
+  vars:
+
+    k8s_deploy: true
+    k8s_verify: false
+
   roles:
 
     - nephelaiio.plugins
+    - nephelaiio.k8s
 
   tasks:
 
-    - name: deploy cluster
-      include_role:
-        name: nephelaiio.k8s
-      vars:
-        k8s_deploy: true
-        k8s_verify: false
+    - name: install postgresql binary
+      ansible.builtin.package:
+        name: postgresql-client
+      become: yes

@@ -5,15 +5,16 @@
 
   gather_facts: false
 
+  vars:
+
+    k8s_deploy: false
+    k8s_verify: true
+    k8s_strimzi_verify: false
+    k8s_ingress_verify: false
+    k8s_zalando_verify: false
+    k8s_volume_verify: false
+
   roles:
 
     - nephelaiio.plugins
-
-  tasks:
-
-    - name: verify cluster
-      include_role:
-        name: nephelaiio.k8s
-      vars:
-        k8s_deploy: false
-        k8s_verify: true
+    - nephelaiio.k8s

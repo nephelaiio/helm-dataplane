@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dataplane.metabase.fullname" . }}
+  labels:
+    {{- include "dataplane.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.metabase.service.type }}
+  ports:
+    - port: {{ .Values.metabase.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "dataplane.selectorLabels" . | nindent 4 }}
