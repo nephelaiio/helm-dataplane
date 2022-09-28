@@ -33,13 +33,15 @@ WAREHOUSE_USER := strimzi
 WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
 WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-.PHONY: poetry clean molecule run helm kubectl psql docker dataplane
+TARGETS = poetry clean molecule run helm kubectl psql docker dataplane
+
+.PHONY: $(TARGETS)
 
 clean:
-	find /home/teddyphreak/.cache/ansible-compat/ -type l -wholename "*roles/*" | xargs -r rm -f
+	find /home/teddyphreak/.cache/ansible-compat/ -mindepth 2 -maxdepth 2 -type d -name "roles" | xargs -r rm -rf
 
 molecule: clean poetry
-	KIND_RELEASE=$(KIND_RELEASE) K8S_RELEASE=$(K8S_RELEASE) poetry run molecule $(filter-out $@,$(MAKECMDGOALS)) -s $(SCENARIO)
+	KIND_RELEASE=$(KIND_RELEASE) K8S_RELEASE=$(K8S_RELEASE) poetry run molecule $(filter-out $(TARGETS),$(MAKECMDGOALS)) -s $(SCENARIO)
 
 run:
 	$(EPHEMERAL_DIR)/bwrap $(filter-out $@,$(MAKECMDGOALS))
@@ -64,9 +66,6 @@ warehouse:
 
 build:
 	docker build --rm --tag "dataplane:$(GIT_COMMIT)" .
-
-dataplane:
-	@:
 
 %:
 	@:
