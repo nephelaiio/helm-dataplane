@@ -41,7 +41,6 @@ provisioner:
           k8s_awxoperator_deploy: false
           k8s_zalando_deploy: true
           k8s_nginx_deploy: true
-          k8s_molecule_cluster_type: kind
           k8s_zalando_storage_class: standard
 
           # kind vardefs
