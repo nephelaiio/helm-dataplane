@@ -26,7 +26,7 @@ Chart depends on the following cluster levels components being deployed in the t
 * Zalando
 * Ingress controller
 
-Dependencies are provisioned with 
+Cluster dependencies are provisioned with role [nephelaiio.k8s](https://github.com/nephelaiio/ansible-role-k8s) in testing environment
 
 ## Testing
 Testing is performed using molecule against a local single-node kind cluster using Github Actions and can be replicated locally for the latest supported cluster version using the following commands:
