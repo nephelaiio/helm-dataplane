@@ -48,7 +48,7 @@ provisioner:
           kind_net_addr: 172.19.0.0/24
           kind_cluster_name: molecule-dataplane
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
-          kind_multinode: false
+          kind_nodes: 1
 
           # test vardefs
           dataplane_pagila_namespace: dataplane

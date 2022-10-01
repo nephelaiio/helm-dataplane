@@ -33,9 +33,9 @@ WAREHOUSE_USER := strimzi
 WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
 WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-DOCKER_REGISTRY := localhost:5000/
-DOCKER_USER := nephelaiio
-DATAPLANE_RELEASE := latest
+DOCKER_REGISTRY ?= localhost:5000/
+DOCKER_USER ?= nephelaiio
+DATAPLANE_RELEASE ?= latest
 
 TARGETS = poetry clean molecule run helm kubectl psql docker dataplane images connect
 
@@ -73,18 +73,18 @@ images: metabase-init kafka-connect
 metabase-init:
 	docker build \
 		--rm \
-		--tag "$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		--tag "${DOCKER_REGISTRY}$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
 		. ; \
-	docker image push $(DOCKER_REGISTRY)$(DOCKER_USER)/metabase-init:$(METABASE_RELEASE)
+	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 kafka-connect:
 	cd connect && \
 	docker build \
 		--rm \
-		--tag "$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		--tag "${DOCKER_REGISTRY}$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
 		--build-arg KAFKA_RELEASE=$$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r) \
 		. ; \
-	docker image push $(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(METABASE_RELEASE)
+	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 dataplane:
 	@:
