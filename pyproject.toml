@@ -4,6 +4,9 @@ version = "0.1.0"
 description = ""
 authors = ["Teodoro Cook <teodoro.cook@gmail.com>"]
 
+[tool.poetry.scripts]
+dataplane = 'dataplane.cli:main'
+
 [tool.poetry.dependencies]
 python = "^3.8"
 
