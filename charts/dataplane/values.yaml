@@ -6,7 +6,7 @@ fullnameOverride: ""
 strimzi:
 
   debezium:
-    version: 2.9.6.Final
+    version: "2.9.6.Final"
 
   kafka:
     version: "3.2.3"

@@ -45,6 +45,8 @@
         binary_path: "{{ k8s_helm_bin }}"
         values:
           strimzi:
+            connect:
+              image: http://molecule-dataplane-registry:5000/dataplane-connect:latest
             kafka:
               storage:
                 size: 10Gi

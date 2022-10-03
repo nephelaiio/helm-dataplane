@@ -12,7 +12,23 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  image: {{ .Values.strimzi.connect.image }}
+  build:
+    output:
+      type: docker
+      image: {{ .Values.strimzi.connect.image }}
+    plugins:
+      - name: debezium-connector-postgres
+        artifacts:
+          - type: maven
+            group: io.debezium
+            artifact: debezium-connector-postgres
+            version: {{ .Values.strimzi.debezium.version }}
+      - name: debezium-connector-mysql
+        artifacts:
+          - type: maven
+            group: io.debezium
+            artifact: debezium-connector-mysql
+            version: {{ .Values.strimzi.debezium.version }}
   replicas: {{ .Values.strimzi.connect.replicas }}
   bootstrapServers: {{ include "dataplane.strimzi.kafka.bootstrap" . }}:{{ .Values.strimzi.kafka.listener.plain.port }}
   {{- with .Values.strimzi.connect.config }}
