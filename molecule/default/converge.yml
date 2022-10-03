@@ -160,6 +160,11 @@
           )
         }}"
 
+    - name: wait for database port open
+      ansible.builtin.wait_for:
+        host: "{{ pagila_src_host }}"
+        port: 5432
+
     - name: drop database
       community.postgresql.postgresql_db:
         name: "{{ dataplane_pagila_db }}"
