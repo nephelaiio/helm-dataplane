@@ -36,8 +36,10 @@ WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREH
 DOCKER_REGISTRY ?= localhost:5000/
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
+KAFKA_RELEASE := $$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r)
+DEBEZIUM_RELEASE := $$(yq eval '.debezium.version' ../charts/dataplane/values.yaml -r)
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane images connect
+TARGETS = poetry clean molecule run helm kubectl psql docker dataplane images
 
 .PHONY: $(TARGETS)
 
@@ -68,21 +70,12 @@ metabase:
 warehouse:
 	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
 
-images: metabase-init kafka-connect
+images: metabase-init
 
 metabase-init:
 	docker build \
 		--rm \
 		--tag "${DOCKER_REGISTRY}$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
-		. ; \
-	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
-
-kafka-connect:
-	cd connect && \
-	docker build \
-		--rm \
-		--tag "${DOCKER_REGISTRY}$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
-		--build-arg KAFKA_RELEASE=$$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r) \
 		. ; \
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
