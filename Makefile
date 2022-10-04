@@ -46,7 +46,7 @@ TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane
 clean:
 	find /home/teddyphreak/.cache/ansible-compat/ -mindepth 2 -maxdepth 2 -type d -name "roles" | xargs -r rm -rf
 
-molecule: clean poetry images
+molecule: clean poetry
 	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $(filter-out $(TARGETS),$(MAKECMDGOALS)) -s $(SCENARIO)
 
 run:
