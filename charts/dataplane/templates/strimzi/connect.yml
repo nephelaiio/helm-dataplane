@@ -1,0 +1,21 @@
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: {{ include "dataplane.strimzi.connect.fullname" . }}
+  {{- with .Values.strimzi.connect.labels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.strimzi.connect.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  image: {{ .Values.strimzi.connect.image }}
+  replicas: {{ .Values.strimzi.connect.replicas }}
+  bootstrapServers: {{ include "dataplane.strimzi.kafka.bootstrap" . }}:{{ .Values.strimzi.kafka.listener.plain.port }}
+  {{- with .Values.strimzi.connect.config }}
+  config:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

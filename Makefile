@@ -7,7 +7,7 @@
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
 KIND_RELEASE := $$(yq eval '.jobs.molecule.strategy.matrix.include[0].release ' .github/workflows/molecule.yml)
-K8S_RELEASE := $$(yq eval '.jobs.molecule.strategy.matrix.include[0].image' .github/workflows/molecule.yml)
+KIND_IMAGE := $$(yq eval '.jobs.molecule.strategy.matrix.include[0].image' .github/workflows/molecule.yml)
 ROLE_NAME := $$(pwd | xargs basename)
 SCENARIO ?= default
 EPHEMERAL_DIR := $$HOME/.cache/molecule/$(ROLE_NAME)/$(SCENARIO)
@@ -33,7 +33,13 @@ WAREHOUSE_USER := strimzi
 WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
 WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane
+DOCKER_REGISTRY ?= localhost:5000/
+DOCKER_USER ?= nephelaiio
+DATAPLANE_RELEASE ?= latest
+KAFKA_RELEASE := $$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r)
+DEBEZIUM_RELEASE := $$(yq eval '.debezium.version' ../charts/dataplane/values.yaml -r)
+
+TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-init dataplane-connect images
 
 .PHONY: $(TARGETS)
 
@@ -41,7 +47,7 @@ clean:
 	find /home/teddyphreak/.cache/ansible-compat/ -mindepth 2 -maxdepth 2 -type d -name "roles" | xargs -r rm -rf
 
 molecule: clean poetry
-	KIND_RELEASE=$(KIND_RELEASE) K8S_RELEASE=$(K8S_RELEASE) poetry run molecule $(filter-out $(TARGETS),$(MAKECMDGOALS)) -s $(SCENARIO)
+	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $(filter-out $(TARGETS),$(MAKECMDGOALS)) -s $(SCENARIO)
 
 run:
 	$(EPHEMERAL_DIR)/bwrap $(filter-out $@,$(MAKECMDGOALS))
@@ -53,7 +59,7 @@ kubectl:
 	@KUBECONFIG=$(EPHEMERAL_DIR)/config kubectl $(filter-out $@,$(MAKECMDGOALS))
 
 poetry:
-	@poetry install --no-root
+	@poetry install --only dev --no-root
 
 pagila:
 	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
@@ -64,8 +70,22 @@ metabase:
 warehouse:
 	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
 
-build:
-	docker build --rm --tag "dataplane:$(GIT_COMMIT)" .
+images: dataplane-init dataplane-connect
+
+dataplane-init:
+	docker build \
+		--rm \
+		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		. ; \
+	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
+
+dataplane-connect:
+	cd connect ; \
+	KAFKA_RELEASE=$(KAFKA_RELEASE) DEBEZIUM_RELEASE=$(DEBEZIUM_RELEASE) docker build \
+		--rm \
+		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		. ; \
+	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 dataplane:
 	@:

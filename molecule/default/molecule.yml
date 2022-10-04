@@ -41,15 +41,15 @@ provisioner:
           k8s_awxoperator_deploy: false
           k8s_zalando_deploy: true
           k8s_nginx_deploy: true
-          k8s_molecule_cluster_type: kind
           k8s_zalando_storage_class: standard
 
           # kind vardefs
           kind_bin: ${MOLECULE_EPHEMERAL_DIRECTORY}/kind
           kind_net_addr: 172.19.0.0/24
-          kind_cluster_name: molecule-cdc
+          kind_cluster_name: molecule-dataplane
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
-          kind_multinode: false
+          kind_nodes: 1
+          kind_registry_hostname: molecule-dataplane-registry
 
           # test vardefs
           dataplane_pagila_namespace: dataplane
@@ -65,17 +65,3 @@ provisioner:
 
 verifier:
   name: ansible
-scenario:
-  test_sequence:
-    - dependency
-    - lint
-    - cleanup
-    - destroy
-    - syntax
-    - create
-    - prepare
-    - converge
-    - verify
-    - side_effect
-    - cleanup
-    - destroy

@@ -24,6 +24,19 @@
         wait_sleep: 10
         wait_timeout: 300
 
+    - name: wait for zalando crd deployment
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: CustomResourceDefinition
+        name: postgresqls.acid.zalan.do
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        wait: true
+        wait_condition:
+          status: True
+          type: NamesAccepted
+        wait_sleep: 10
+        wait_timeout: 300
+
     - name: create metabase namespace
       kubernetes.core.k8s:
         state: present
@@ -45,10 +58,16 @@
         binary_path: "{{ k8s_helm_bin }}"
         values:
           strimzi:
+            connect:
+              image: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect:latest"
             kafka:
               storage:
                 size: 10Gi
                 class: standard
+              config:
+                offsets.topic.replication.factor: 1
+                transaction.state.log.replication.factor: 1
+                transaction.state.log.min.isr: 1
             zookeeper:
               storage:
                 size: 10Gi
@@ -155,6 +174,11 @@
             kubeconfig=k8s_kubeconfig
           )
         }}"
+
+    - name: wait for database port open
+      ansible.builtin.wait_for:
+        host: "{{ pagila_src_host }}"
+        port: 5432
 
     - name: drop database
       community.postgresql.postgresql_db:

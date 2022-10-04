@@ -67,21 +67,39 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
-Create schema fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "dataplane.schema.fullname" -}}
-{{- printf "%s-%s-%s" (include "dataplane.fullname" .) "schema" "app"  | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
 Create strimzi fully qualified broker name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "dataplane.strimzi.kafka.fullname" -}}
-{{- printf "%s-%s-%s" (include "dataplane.fullname" .) "strimzi" "kafka"  | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" (include "dataplane.fullname" .) "strimzi" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create strimzi fully qualified bootstrap name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "dataplane.strimzi.kafka.bootstrap" -}}
+{{- printf "%s-kafka-bootstrap.%s.svc" (include "dataplane.strimzi.kafka.fullname" .) .Release.Namespace }}
+{{- end }}
+
+{{/*
+Create strimzi fully qualified connect cluster name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "dataplane.strimzi.connect.fullname" -}}
+{{- printf "%s-%s" (include "dataplane.fullname" .) "connect" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create quay fully qualified deployment name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "dataplane.quay.fullname" -}}
+{{- printf "%s-%s" (include "dataplane.fullname" .) "quay" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
