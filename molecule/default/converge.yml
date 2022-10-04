@@ -46,7 +46,7 @@
         values:
           strimzi:
             connect:
-              image: "{{ kind_registry_hostname }}:5000/dataplane-connect:latest"
+              image: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect:latest"
             kafka:
               storage:
                 size: 10Gi
