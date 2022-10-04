@@ -46,7 +46,7 @@
         values:
           strimzi:
             connect:
-              image: http://molecule-dataplane-registry:5000/dataplane-connect:latest
+              image: http://localhost:5000/dataplane-connect:latest
             kafka:
               storage:
                 size: 10Gi
