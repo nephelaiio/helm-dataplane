@@ -24,6 +24,19 @@
         wait_sleep: 10
         wait_timeout: 300
 
+    - name: wait for zalando crd deployment
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: CustomResourceDefinition
+        name: postgresqls.acid.zalan.do
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        wait: true
+        wait_condition:
+          status: True
+          type: NamesAccepted
+        wait_sleep: 10
+        wait_timeout: 300
+
     - name: create metabase namespace
       kubernetes.core.k8s:
         state: present
