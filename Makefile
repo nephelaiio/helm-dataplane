@@ -70,7 +70,7 @@ metabase:
 warehouse:
 	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
 
-images: dataplane-init
+images: dataplane-init dataplane-connect
 
 dataplane-init:
 	docker build \
@@ -83,7 +83,7 @@ dataplane-connect:
 	cd connect ; \
 	KAFKA_RELEASE=$(KAFKA_RELEASE) DEBEZIUM_RELEASE=$(DEBEZIUM_RELEASE) docker build \
 		--rm \
-		--tag "${DOCKER_REGISTRY}$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
 		. ; \
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 

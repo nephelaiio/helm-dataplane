@@ -49,6 +49,7 @@ provisioner:
           kind_cluster_name: molecule-dataplane
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
           kind_nodes: 1
+          kind_registry_hostname: molecule-dataplane-registry
 
           # test vardefs
           dataplane_pagila_namespace: dataplane
@@ -64,17 +65,3 @@ provisioner:
 
 verifier:
   name: ansible
-scenario:
-  test_sequence:
-    - dependency
-    - lint
-    - cleanup
-    - destroy
-    - syntax
-    - create
-    - prepare
-    - converge
-    - verify
-    - side_effect
-    - cleanup
-    - destroy
