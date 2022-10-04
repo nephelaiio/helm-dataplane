@@ -59,8 +59,30 @@ jobs:
       - name: install pips
         run: poetry install
 
-      - name: run molecule tests.
-        run: poetry run molecule test -s ${{ matrix.scenario }}
+      - name: install make
+        run: apt-get install -y make
+
+      - name: create molecule test scenario
+        run: make molecule create -- -s ${{ matrix.scenario }}
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+          KIND_RELEASE: ${{ matrix.release }}
+          KIND_IMAGE: ${{ matrix.image }}
+
+      - name: publish test images
+        run: make images
+
+      - name: converge molecule test scenario
+        run: make molecule converge -- -s ${{ matrix.scenario }}
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+          KIND_RELEASE: ${{ matrix.release }}
+          KIND_IMAGE: ${{ matrix.image }}
+
+      - name: verify molecule test scenario
+        run: make molecule verify -- -s ${{ matrix.scenario }}
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
