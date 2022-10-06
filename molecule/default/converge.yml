@@ -45,50 +45,6 @@
         name: "{{ dataplane_namespace }}"
         kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
 
-    - name: deploy metabase helm chart
-      kubernetes.core.helm:
-        state: present
-        name: "{{ dataplane_chart }}"
-        chart_ref: "{{ dataplane_path }}/charts/dataplane"
-        release_namespace: "{{ dataplane_namespace }}"
-        create_namespace: true
-        wait: true
-        timeout: 10m
-        kubeconfig: "{{ k8s_kubeconfig }}"
-        binary_path: "{{ k8s_helm_bin }}"
-        values:
-          strimzi:
-            connect:
-              image: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect:latest"
-            kafka:
-              storage:
-                size: 10Gi
-                class: standard
-              config:
-                offsets.topic.replication.factor: 1
-                transaction.state.log.replication.factor: 1
-                transaction.state.log.min.isr: 1
-            zookeeper:
-              storage:
-                size: 10Gi
-                class: standard
-          zalando:
-            metabase:
-              instances: 1
-              loadBalancer: true
-              allowedSourceRanges: 0.0.0.0/0
-            warehouse:
-              instances: 1
-              loadBalancer: true
-              allowedSourceRanges: 0.0.0.0/0
-          metabase:
-            ingress:
-              enabled: true
-              className: nginx-private
-              hostName: "{{ dataplane_metabase_hostname }}"
-              annotations:
-                cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
-
     - name: deploy source postgresql db
       kubernetes.core.k8s:
         state: present
@@ -122,6 +78,78 @@
               {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}
             postgresql:
               version: "13"
+
+    - name: wait for database cluster startup
+      ansible.builtin.fail:
+        msg: "zalando clusters failed to come up on time"
+      vars:
+        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
+        cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
+        cluster_query: "{{
+          query(
+            'kubernetes.core.k8s',
+            api_version='acid.zalan.do/v1',
+            kind='postgresql',
+            kubeconfig=k8s_kubeconfig
+          )
+        }}"
+      retries: 15
+      delay: 30
+      until: cluster_failed | length == 0
+      failed_when:
+        - (cluster_status | length) != (cluster_query | length)
+        - cluster_failed | length > 0
+
+    - name: deploy metabase helm chart
+      kubernetes.core.helm:
+        state: present
+        name: "{{ dataplane_chart }}"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
+        release_namespace: "{{ dataplane_namespace }}"
+        create_namespace: true
+        wait: true
+        timeout: 10m
+        kubeconfig: "{{ k8s_kubeconfig }}"
+        binary_path: "{{ k8s_helm_bin }}"
+        values:
+          cdc:
+            postgres:
+              - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+                port: 5432
+                servername: pagila
+                dbname: db
+          strimzi:
+            connect:
+              image: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect:latest"
+              secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+            kafka:
+              storage:
+                size: 10Gi
+                class: standard
+              config:
+                offsets.topic.replication.factor: 1
+                transaction.state.log.replication.factor: 1
+                transaction.state.log.min.isr: 1
+            zookeeper:
+              storage:
+                size: 10Gi
+                class: standard
+          zalando:
+            metabase:
+              instances: 1
+              loadBalancer: true
+              allowedSourceRanges: 0.0.0.0/0
+            warehouse:
+              instances: 1
+              loadBalancer: true
+              allowedSourceRanges: 0.0.0.0/0
+          metabase:
+            ingress:
+              enabled: true
+              className: nginx-private
+              hostName: "{{ dataplane_metabase_hostname }}"
+              annotations:
+                cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
 
     - name: wait for database cluster startup
       ansible.builtin.fail:

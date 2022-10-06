@@ -90,16 +90,16 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "dataplane.strimzi.connect.fullname" -}}
-{{- printf "%s-%s" (include "dataplane.fullname" .) "connect" | trunc 63 | trimSuffix "-" }}
+{{- include "dataplane.fullname" . }}
 {{- end }}
 
 {{/*
-Create quay fully qualified deployment name.
+Create strimzi fully qualified connector name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "dataplane.quay.fullname" -}}
-{{- printf "%s-%s" (include "dataplane.fullname" .) "quay" | trunc 63 | trimSuffix "-" }}
+{{- define "dataplane.cdc.connector" -}}
+{{- printf "%s-%s" (include "dataplane.fullname" .) "connect " | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*

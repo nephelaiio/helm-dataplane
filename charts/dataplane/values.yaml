@@ -3,6 +3,10 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+cdc:
+
+    postgres: []
+
 strimzi:
 
   debezium:

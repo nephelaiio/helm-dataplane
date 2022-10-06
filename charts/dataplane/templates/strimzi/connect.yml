@@ -1,3 +1,4 @@
+{{- $secret := required "kafka cdc secret name is required" .Values.strimzi.connect.secret }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
@@ -19,3 +20,8 @@ spec:
   config:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  externalConfiguration:
+    volumes:
+      - name: connector-config
+        secret:
+          secretName: {{ $secret }}

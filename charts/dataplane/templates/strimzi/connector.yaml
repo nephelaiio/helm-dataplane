@@ -1,0 +1,27 @@
+{{- $fullName := include "dataplane.strimzi.connect.fullname" . -}}
+{{- $secret := required "kafka cdc secret name is required" .Values.strimzi.connect.secret }}
+
+{{- range $db := .Values.cdc.postgres }}
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: {{ $fullName }}-{{ $db.servername }}-{{ $db.dbname }}
+  labels:
+    strimzi.io/cluster: {{ $fullName }}
+spec:
+  class: io.debezium.connector.PostgresConnector
+  tasksMax: 1
+  config:
+    database.hostname: {{ $db.hostname }}
+    database.port: "{{ $db.port | default 5432 }}"
+    database.user: "${file:/opt/kafka/external-configuration/connector-config/{{ $secret }}:username}"
+    database.password: "${file:/opt/kafka/external-configuration/connector-config/{{ $secret }}:password}"
+    database.server.name: "{{ $db.servername }}"
+    database.dbname: "{{ $db.dbname }}"
+    tasks.max: "1"
+    key.converter: "org.apache.kafka.connect.json.JsonConverter"
+    key.converter.schemas.enable: "false"
+    value.converter: "org.apache.kafka.connect.json.JsonConverter"
+    value.converter.schemas.enable: "false"
+{{- end }}
