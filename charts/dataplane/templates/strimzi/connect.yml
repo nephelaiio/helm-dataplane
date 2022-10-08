@@ -1,4 +1,4 @@
-{{- $secret := required "kafka cdc secret name is required" .Values.strimzi.connect.secret }}
+{{- $pgSecret := required "kafka postgres cdc secret name is required" .Values.strimzi.connect.secret }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
@@ -16,12 +16,21 @@ spec:
   image: {{ .Values.strimzi.connect.image }}
   replicas: {{ .Values.strimzi.connect.replicas }}
   bootstrapServers: {{ include "dataplane.strimzi.kafka.bootstrap" . }}:{{ .Values.strimzi.kafka.listener.plain.port }}
-  {{- with .Values.strimzi.connect.config }}
   config:
+    config.providers: env
+    config.providers.env.class: io.strimzi.kafka.EnvVarConfigProvider
+  {{- with .Values.strimzi.connect.config }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
   externalConfiguration:
-    volumes:
-      - name: connector-config
-        secret:
-          secretName: {{ $secret }}
+    env:
+      - name: POSTGRES_USER
+        valueFrom:
+          secretKeyRef:
+            name: {{ $pgSecret }}
+            key: username
+      - name: POSTGRES_PASS
+        valueFrom:
+          secretKeyRef:
+            name: {{ $pgSecret }}
+            key: password

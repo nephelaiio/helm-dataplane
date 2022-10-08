@@ -1,5 +1,4 @@
 {{- $fullName := include "dataplane.strimzi.connect.fullname" . -}}
-{{- $secret := required "kafka cdc secret name is required" .Values.strimzi.connect.secret }}
 
 {{- range $db := .Values.cdc.postgres }}
 ---
@@ -10,13 +9,13 @@ metadata:
   labels:
     strimzi.io/cluster: {{ $fullName }}
 spec:
-  class: io.debezium.connector.PostgresConnector
+  class: io.debezium.connector.postgresql.PostgresConnector
   tasksMax: 1
   config:
     database.hostname: {{ $db.hostname }}
     database.port: "{{ $db.port | default 5432 }}"
-    database.user: "${file:/opt/kafka/external-configuration/connector-config/{{ $secret }}:username}"
-    database.password: "${file:/opt/kafka/external-configuration/connector-config/{{ $secret }}:password}"
+    database.user: "${env:POSTGRES_USER}"
+    database.password: "${env:POSTGRES_PASS}"
     database.server.name: "{{ $db.servername }}"
     database.dbname: "{{ $db.dbname }}"
     tasks.max: "1"

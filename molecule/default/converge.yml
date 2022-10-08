@@ -78,6 +78,8 @@
               {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}
             postgresql:
               version: "13"
+              parameters:
+                wal_level: logical
 
     - name: wait for database cluster startup
       ansible.builtin.fail:
