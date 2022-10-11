@@ -77,7 +77,7 @@
             databases:
               {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}
             postgresql:
-              version: "13"
+              version: "14"
               parameters:
                 wal_level: logical
 

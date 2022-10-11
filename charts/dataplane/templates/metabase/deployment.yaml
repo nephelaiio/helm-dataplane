@@ -5,7 +5,7 @@ kind: Deployment
 metadata:
   name: {{ include "dataplane.metabase.fullname" . }}
   labels:
-    {{- include "dataplane.labels" . | nindent 4 }}
+    {{- include "dataplane.metabase.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.metabase.replicaCount }}
   selector:
@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "dataplane.selectorLabels" . | nindent 8 }}
+        {{- include "dataplane.metabase.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

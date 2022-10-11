@@ -19,7 +19,7 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "dataplane.labels" . | nindent 4 }}
+    {{- include "dataplane.metabase.labels" . | nindent 4 }}
   {{- with .Values.metabase.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

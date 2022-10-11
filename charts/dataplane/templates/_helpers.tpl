@@ -42,7 +42,6 @@ Common labels
 */}}
 {{- define "dataplane.labels" -}}
 helm.sh/chart: {{ include "dataplane.chart" . }}
-{{ include "dataplane.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -50,11 +49,59 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels
+Common selector labels
 */}}
 {{- define "dataplane.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "dataplane.name" . }}
 app.kubernetes.io/instance: {{ include "dataplane.release" . }}
+{{- end }}
+
+{{/*
+Metabase labels
+*/}}
+{{- define "dataplane.metabase.labels" -}}
+{{ include "dataplane.labels" . }}
+{{ include "dataplane.metabase.selectorLabels" . }}
+{{- end }}
+
+{{/*
+Metabase selector labels
+*/}}
+{{- define "dataplane.metabase.selectorLabels" -}}
+{{ include "dataplane.selectorLabels" . }}
+app.kubernetes.io/component: {{ include "dataplane.name" . }}-metabase
+{{- end }}
+
+{{/*
+Strimzi labels
+*/}}
+{{- define "dataplane.strimzi.labels" -}}
+{{ include "dataplane.labels" . }}
+{{ include "dataplane.strimzi.selectorLabels" . }}
+{{- end }}
+
+{{/*
+Srimzi selector labels
+*/}}
+{{- define "dataplane.strimzi.selectorLabels" -}}
+{{ include "dataplane.selectorLabels" . }}
+app.kubernetes.io/component: {{ include "dataplane.name" . }}-strimzi
+{{- end }}
+
+{{/*
+Registry labels
+*/}}
+{{- define "dataplane.registry.labels" -}}
+{{ include "dataplane.labels" . }}
+{{ include "dataplane.registry.selectorLabels" . }}
+{{- end }}
+
+{{/*
+Registry selector labels
+*/}}
+{{- define "dataplane.registry.selectorLabels" -}}
+{{ include "dataplane.selectorLabels" . }}
+app.kubernetes.io/component: {{ include "dataplane.name" . }}-registry
 {{- end }}
 
 {{/*

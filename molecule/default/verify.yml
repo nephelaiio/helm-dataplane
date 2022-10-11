@@ -10,7 +10,7 @@
     k8s_deploy: false
     k8s_verify: true
     k8s_strimzi_verify: false
-    k8s_ingress_verify: false
+    k8s_ingress_verify: true
     k8s_zalando_verify: false
     k8s_volume_verify: false
 
