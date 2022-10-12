@@ -114,6 +114,15 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+Create registry fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "dataplane.registry.fullname" -}}
+{{- printf "%s-%s" (include "dataplane.fullname" .) "registry" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create strimzi fully qualified broker name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.

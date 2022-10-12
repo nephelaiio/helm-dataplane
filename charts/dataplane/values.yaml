@@ -93,6 +93,29 @@ metabase:
       value: "true"
 
   securityContext: {}
+  podSecurityContext: {}
+  podAnnotations: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+registry:
+
+  image:
+    repository: confluentinc/cp-schema-registry
+    pullPolicy: IfNotPresent
+    tag: "5.4.10"
+
+  service:
+    type: ClusterIP
+    port: 8081
+
+  podEnvironmentVars:
+    - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
+      value: "true"
+
+  securityContext: {}
 
   podSecurityContext: {}
 
