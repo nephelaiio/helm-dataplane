@@ -210,14 +210,6 @@
         host: "{{ pagila_src_host }}"
         port: 5432
 
-    - name: drop database
-      community.postgresql.postgresql_db:
-        name: "{{ dataplane_pagila_db }}"
-        state: absent
-        login_user: "{{ pagila_src_user }}"
-        login_password: "{{ pagila_src_pass }}"
-        login_host: "{{ pagila_src_host }}"
-
     - name: create database
       community.postgresql.postgresql_db:
         name: "{{ dataplane_pagila_db }}"
