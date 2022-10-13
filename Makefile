@@ -39,7 +39,7 @@ DATAPLANE_RELEASE ?= latest
 KAFKA_RELEASE := $$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r)
 DEBEZIUM_RELEASE := $$(yq eval '.debezium.version' ../charts/dataplane/values.yaml -r)
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-init dataplane-connect images
+TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-init dataplane-connect images strimzi strimzi-topics
 
 .PHONY: $(TARGETS)
 
@@ -86,6 +86,11 @@ dataplane-connect:
 		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
 		. ; \
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
+
+strimzi: strimzi-topics
+
+strimzi-topics:
+	make --no-print-directory kubectl exec -- -it pod/dataplane-strimzi-kafka-0 -n dataplane -- "/opt/kafka/bin/kafka-topics.sh --bootstrap-server dataplane-strimzi-kafka-bootstrap:9092 --list"
 
 dataplane:
 	@:
