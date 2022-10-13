@@ -1,4 +1,6 @@
 {{- $fullName := include "dataplane.strimzi.connect.fullname" . -}}
+{{- $registryName := include "dataplane.registry.fullname" . -}}
+{{- $registryPort := .Values.registry.service.port -}}
 
 {{- range $db := .Values.cdc.postgres }}
 ---
@@ -19,8 +21,8 @@ spec:
     database.server.name: "{{ $db.servername }}"
     database.dbname: "{{ $db.dbname }}"
     tasks.max: "1"
-    key.converter: "org.apache.kafka.connect.json.JsonConverter"
-    key.converter.schemas.enable: "false"
-    value.converter: "org.apache.kafka.connect.json.JsonConverter"
-    value.converter.schemas.enable: "false"
+    key.converter: io.confluent.connect.avro.AvroConverter
+    key.converter.schema.registry.url: http://$registryName:$registryPort
+    value.converter: io.confluent.connect.avro.AvroConverter
+    value.converter.schema.registry.url: http://$registryName:$registryPort
 {{- end }}
