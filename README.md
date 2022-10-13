@@ -7,8 +7,8 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 * Zalando PostgreSQL Data Warehouse
 * Metabase Data Reporting
 * Strimzi Kafka Connect cluster
+* Strimzi Kafka Schema Registry
 * Strimzi Kafka Connect sources/sinks [In Progress]
-* Strimzi Kafka Schema Registry [In Progress]
 * Apache Flink [Planned]
 
 ## TODO
