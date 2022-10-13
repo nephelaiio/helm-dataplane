@@ -33,7 +33,7 @@ spec:
         - "{{ .Values.metabase.ingress.hostName }}"
       secretName: {{ $secretName }}
   rules:
-    - host: {{ .host | quote }}
+    - host: "{{ .Values.metabase.ingress.hostName }}"
       http:
         paths:
           - path: /
