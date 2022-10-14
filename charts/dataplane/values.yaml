@@ -34,7 +34,14 @@ strimzi:
   connect:
     image: nephelaiio/dataplane-connect:latest
     replicas: 3
-    config: {}
+    config:
+      group.id: connect-cluster
+      offset.storage.topic: connect-cluster-offsets
+      config.storage.topic: connect-cluster-configs
+      status.storage.topic: connect-cluster-status
+      config.storage.replication.factor: 2
+      offset.storage.replication.factor: 2
+      status.storage.replication.factor: 2
     annotations:
       strimzi.io/use-connector-resources: "true"
 
