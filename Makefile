@@ -71,6 +71,7 @@ warehouse:
 	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
 
 images: dataplane-init dataplane-connect
+	curl http://localhost:5000/v2/_catalog | jq
 
 dataplane-init:
 	docker build \

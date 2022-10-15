@@ -25,4 +25,8 @@ spec:
     key.converter.schema.registry.url: http://$registryName:$registryPort
     value.converter: io.confluent.connect.avro.AvroConverter
     value.converter.schema.registry.url: http://$registryName:$registryPort
+    transforms: Reroute
+    transforms.Reroute.type: io.debezium.transforms.ByLogicalTableRouter
+    transforms.Reroute.topic.regex: (.*)
+    transforms.Reroute.topic.replacement: cdc.$1
 {{- end }}
