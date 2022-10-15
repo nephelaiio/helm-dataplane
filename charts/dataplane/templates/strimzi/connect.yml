@@ -22,9 +22,9 @@ spec:
     config.providers: env
     config.providers.env.class: io.strimzi.kafka.EnvVarConfigProvider
     key.converter: io.confluent.connect.avro.AvroConverter
-    key.converter.schema.registry.url: http://$registryName:$registryPort
+    key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
     value.converter: io.confluent.connect.avro.AvroConverter
-    value.converter.schema.registry.url: http://$registryName:$registryPort
+    value.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
   {{- with .Values.strimzi.connect.config }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
