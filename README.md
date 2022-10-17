@@ -8,13 +8,10 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 * Metabase Data Reporting
 * Strimzi Kafka Connect cluster
 * Strimzi Kafka Schema Registry
-* Strimzi Kafka Connect sources/sinks [In Progress]
-* Apache Flink [Planned]
+* Strimzi Kafka Connect sources/sinks
 
 ## TODO
 In order of priority
-* Add Kafka Connect sources
-* Add Kafka Connect sinks
 * Add initContainer for Metabase initialization
 * Add initContainer for Metabase Data Warehouse registration
 * Add data quality tests

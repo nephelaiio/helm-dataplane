@@ -56,6 +56,10 @@ provisioner:
           dataplane_pagila_team: pagila
           dataplane_pagila_user: metabase
           dataplane_pagila_db: db
+          dataplane_sagila_namespace: dataplane
+          dataplane_sagila_team: pagila
+          dataplane_sagila_user: metabase
+          dataplane_sagila_db: db
 
           # dataplane vardefs
           dataplane_namespace: dataplane

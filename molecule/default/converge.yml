@@ -45,7 +45,7 @@
         name: "{{ dataplane_namespace }}"
         kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
 
-    - name: deploy source postgresql db
+    - name: deploy source pagila db
       kubernetes.core.k8s:
         state: present
         kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
@@ -82,6 +82,43 @@
               parameters:
                 wal_level: logical
 
+    - name: deploy source sagila db
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        resource_definition: "{{ _definition }}"
+      vars:
+        _definition: |
+          apiVersion: acid.zalan.do/v1
+          kind: postgresql
+          metadata:
+            name: {{ dataplane_sagila_team }}-{{ dataplane_sagila_db }}
+            namespace: {{ dataplane_sagila_namespace }}
+          spec:
+            teamId: {{ dataplane_sagila_team }}
+            volume:
+              size: 1Gi
+            numberOfInstances: 1
+            allowedSourceRanges:
+              - 0.0.0.0/0
+            enableMasterLoadBalancer: true
+            serviceAnnotations:
+              metallb.universe.tf/address-pool: private
+            users:
+              zalando:
+                - superuser
+                - createdb
+              {{ dataplane_sagila_user }}:
+                - login
+                - replication
+                - createdb
+            databases:
+              {{ dataplane_sagila_db }}: {{ dataplane_sagila_user }}
+            postgresql:
+              version: "14"
+              parameters:
+                wal_level: logical
+
     - name: wait for database cluster startup
       ansible.builtin.fail:
         msg: "zalando clusters failed to come up on time"
@@ -111,7 +148,7 @@
         release_namespace: "{{ dataplane_namespace }}"
         create_namespace: true
         force: true
-        wait: true
+        wait: false
         timeout: 20m
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
@@ -121,6 +158,10 @@
               - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                 port: 5432
                 servername: pagila
+                dbname: db
+              - hostname: "{{ dataplane_sagila_team }}-{{ dataplane_sagila_db }}"
+                port: 5432
+                servername: sagila
                 dbname: db
           strimzi:
             connect:
