@@ -12,12 +12,20 @@ ROLE_NAME := $$(pwd | xargs basename)
 SCENARIO ?= default
 EPHEMERAL_DIR := $$HOME/.cache/molecule/$(ROLE_NAME)/$(SCENARIO)
 
+
 PAGILA_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_db' molecule/default/molecule.yml -r)
 PAGILA_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_namespace' molecule/default/molecule.yml -r)
 PAGILA_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_team' molecule/default/molecule.yml -r)
 PAGILA_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagila_user' molecule/default/molecule.yml -r)
 PAGILA_PASS := $$(make --no-print-directory kubectl get secret $(PAGILA_USER)-$(PAGILA_TEAM)-$(PAGILA_DB) -- -n $(PAGILA_NS) -o json | jq '.data.password' -r | base64 -d )
 PAGILA_HOST := $$(make --no-print-directory kubectl get service -- -n $(PAGILA_NS) -o json | jq ".items | map(select(.metadata.name == \"$(PAGILA_TEAM)-$(PAGILA_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
+
+SAGILA_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_db' molecule/default/molecule.yml -r)
+SAGILA_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_namespace' molecule/default/molecule.yml -r)
+SAGILA_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_team' molecule/default/molecule.yml -r)
+SAGILA_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_user' molecule/default/molecule.yml -r)
+SAGILA_PASS := $$(make --no-print-directory kubectl get secret $(SAGILA_USER)-$(SAGILA_TEAM)-$(SAGILA_DB) -- -n $(SAGILA_NS) -o json | jq '.data.password' -r | base64 -d )
+SAGILA_HOST := $$(make --no-print-directory kubectl get service -- -n $(SAGILA_NS) -o json | jq ".items | map(select(.metadata.name == \"$(SAGILA_TEAM)-$(SAGILA_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
 METABASE_DB := metabase
 METABASE_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_namespace' molecule/default/molecule.yml -r)
@@ -30,8 +38,8 @@ WAREHOUSE_DB := warehouse
 WAREHOUSE_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_namespace' molecule/default/molecule.yml -r)
 WAREHOUSE_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_chart' molecule/default/molecule.yml -r)
 WAREHOUSE_USER := strimzi
-WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
-WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
+WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
+WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
 DOCKER_REGISTRY ?= localhost:5000/
 DOCKER_USER ?= nephelaiio
@@ -39,7 +47,7 @@ DATAPLANE_RELEASE ?= latest
 KAFKA_RELEASE := $$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r)
 DEBEZIUM_RELEASE := $$(yq eval '.debezium.version' ../charts/dataplane/values.yaml -r)
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-init dataplane-connect images
+TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-init dataplane-connect images strimzi strimzi-topics
 
 .PHONY: $(TARGETS)
 
@@ -64,6 +72,9 @@ poetry:
 pagila:
 	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
 
+sagila:
+	PGPASSWORD=$(SAGILA_PASS) psql -h $(SAGILA_HOST) -U $(SAGILA_USER) $(SAGILA_DB)
+
 metabase:
 	PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) $(METABASE_DB)
 
@@ -71,6 +82,8 @@ warehouse:
 	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
 
 images: dataplane-init dataplane-connect
+	docker image prune --force; \
+	curl -s http://localhost:5000/v2/_catalog | jq
 
 dataplane-init:
 	docker build \
@@ -86,6 +99,11 @@ dataplane-connect:
 		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
 		. ; \
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
+
+strimzi: strimzi-topics
+
+strimzi-topics:
+	make --no-print-directory kubectl exec -- -it pod/dataplane-strimzi-kafka-0 -n dataplane -- "/opt/kafka/bin/kafka-topics.sh --bootstrap-server dataplane-strimzi-kafka-bootstrap:9092 --list"
 
 dataplane:
 	@:

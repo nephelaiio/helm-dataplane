@@ -1,16 +1,17 @@
 {{- $svcPort := .Values.metabase.service.port -}}
+{{- $hostname := required "metabase ingress hostname is required" .Values.metabase.ingress.hostName }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "dataplane.metabase.fullname" . }}
   labels:
-    {{- include "dataplane.labels" . | nindent 4 }}
+    {{- include "dataplane.metabase.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.metabase.replicaCount }}
   selector:
     matchLabels:
-      {{- include "dataplane.selectorLabels" . | nindent 6 }}
+      {{- include "dataplane.metabase.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.metabase.podAnnotations }}
@@ -18,7 +19,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "dataplane.selectorLabels" . | nindent 8 }}
+        {{- include "dataplane.metabase.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

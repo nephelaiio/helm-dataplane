@@ -19,7 +19,7 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "dataplane.labels" . | nindent 4 }}
+    {{- include "dataplane.metabase.labels" . | nindent 4 }}
   {{- with .Values.metabase.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -33,7 +33,7 @@ spec:
         - "{{ .Values.metabase.ingress.hostName }}"
       secretName: {{ $secretName }}
   rules:
-    - host: {{ .host | quote }}
+    - host: "{{ .Values.metabase.ingress.hostName }}"
       http:
         paths:
           - path: /

@@ -45,6 +45,101 @@
         name: "{{ dataplane_namespace }}"
         kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
 
+    - name: deploy source pagila db
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        resource_definition: "{{ _definition }}"
+      vars:
+        _definition: |
+          apiVersion: acid.zalan.do/v1
+          kind: postgresql
+          metadata:
+            name: {{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}
+            namespace: {{ dataplane_pagila_namespace }}
+          spec:
+            teamId: {{ dataplane_pagila_team }}
+            volume:
+              size: 1Gi
+            numberOfInstances: 1
+            allowedSourceRanges:
+              - 0.0.0.0/0
+            enableMasterLoadBalancer: true
+            serviceAnnotations:
+              metallb.universe.tf/address-pool: private
+            users:
+              zalando:
+                - superuser
+                - createdb
+              {{ dataplane_pagila_user }}:
+                - login
+                - replication
+                - createdb
+            databases:
+              {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}
+            postgresql:
+              version: "14"
+              parameters:
+                wal_level: logical
+
+    - name: deploy source sagila db
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
+        resource_definition: "{{ _definition }}"
+      vars:
+        _definition: |
+          apiVersion: acid.zalan.do/v1
+          kind: postgresql
+          metadata:
+            name: {{ dataplane_sagila_team }}-{{ dataplane_sagila_db }}
+            namespace: {{ dataplane_sagila_namespace }}
+          spec:
+            teamId: {{ dataplane_sagila_team }}
+            volume:
+              size: 1Gi
+            numberOfInstances: 1
+            allowedSourceRanges:
+              - 0.0.0.0/0
+            enableMasterLoadBalancer: true
+            serviceAnnotations:
+              metallb.universe.tf/address-pool: private
+            users:
+              zalando:
+                - superuser
+                - createdb
+              {{ dataplane_sagila_user }}:
+                - login
+                - replication
+                - createdb
+            databases:
+              {{ dataplane_sagila_db }}: {{ dataplane_sagila_user }}
+            postgresql:
+              version: "14"
+              parameters:
+                wal_level: logical
+
+    - name: wait for database cluster startup
+      ansible.builtin.fail:
+        msg: "zalando clusters failed to come up on time"
+      vars:
+        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
+        cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
+        cluster_query: "{{
+          query(
+            'kubernetes.core.k8s',
+            api_version='acid.zalan.do/v1',
+            kind='postgresql',
+            kubeconfig=k8s_kubeconfig
+          )
+        }}"
+      retries: 15
+      delay: 30
+      until: cluster_failed | length == 0
+      failed_when:
+        - (cluster_status | length) != (cluster_query | length)
+        - cluster_failed | length > 0
+
     - name: deploy metabase helm chart
       kubernetes.core.helm:
         state: present
@@ -52,14 +147,26 @@
         chart_ref: "{{ dataplane_path }}/charts/dataplane"
         release_namespace: "{{ dataplane_namespace }}"
         create_namespace: true
-        wait: true
-        timeout: 10m
+        force: true
+        wait: false
+        timeout: 20m
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
         values:
+          cdc:
+            postgres:
+              - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+                port: 5432
+                servername: pagila
+                dbname: db
+              - hostname: "{{ dataplane_sagila_team }}-{{ dataplane_sagila_db }}"
+                port: 5432
+                servername: sagila
+                dbname: db
           strimzi:
             connect:
               image: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect:latest"
+              secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
             kafka:
               storage:
                 size: 10Gi
@@ -88,40 +195,6 @@
               hostName: "{{ dataplane_metabase_hostname }}"
               annotations:
                 cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
-
-    - name: deploy source postgresql db
-      kubernetes.core.k8s:
-        state: present
-        kubeconfig: "{{ k8s_kubeconfig | default(omit) }}"
-        resource_definition: "{{ _definition }}"
-      vars:
-        _definition: |
-          apiVersion: acid.zalan.do/v1
-          kind: postgresql
-          metadata:
-            name: {{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}
-            namespace: {{ dataplane_pagila_namespace }}
-          spec:
-            teamId: {{ dataplane_pagila_team }}
-            volume:
-              size: 1Gi
-            numberOfInstances: 1
-            allowedSourceRanges:
-              - 0.0.0.0/0
-            enableMasterLoadBalancer: true
-            serviceAnnotations:
-              metallb.universe.tf/address-pool: private
-            users:
-              zalando:
-                - superuser
-                - createdb
-              {{ dataplane_pagila_user }}:
-                - superuser
-                - createdb
-            databases:
-              {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}
-            postgresql:
-              version: "13"
 
     - name: wait for database cluster startup
       ansible.builtin.fail:
@@ -179,14 +252,6 @@
       ansible.builtin.wait_for:
         host: "{{ pagila_src_host }}"
         port: 5432
-
-    - name: drop database
-      community.postgresql.postgresql_db:
-        name: "{{ dataplane_pagila_db }}"
-        state: absent
-        login_user: "{{ pagila_src_user }}"
-        login_password: "{{ pagila_src_pass }}"
-        login_host: "{{ pagila_src_host }}"
 
     - name: create database
       community.postgresql.postgresql_db:

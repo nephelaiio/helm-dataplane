@@ -11,7 +11,7 @@ kind: Kafka
 metadata:
   name: {{ include "dataplane.strimzi.kafka.fullname" . }}
   labels:
-    {{- include "dataplane.labels" . | nindent 4 }}
+    {{- include "dataplane.strimzi.labels" . | nindent 4 }}
   {{- with $kafkaAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

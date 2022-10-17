@@ -4,7 +4,7 @@ kind: Service
 metadata:
   name: {{ include "dataplane.metabase.fullname" . }}
   labels:
-    {{- include "dataplane.labels" . | nindent 4 }}
+    {{- include "dataplane.metabase.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.metabase.service.type }}
   ports:
@@ -13,4 +13,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "dataplane.selectorLabels" . | nindent 4 }}
+    {{- include "dataplane.metabase.selectorLabels" . | nindent 4 }}

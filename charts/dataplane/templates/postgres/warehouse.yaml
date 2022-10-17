@@ -24,7 +24,7 @@ spec:
       - createdb
     {{ .Values.zalando.warehouse.user }}: []
   databases:
-    warehouse: {{ .Values.zalando.warehouse.user }}
+    {{ include "dataplane.warehouse.db" . }}: {{ .Values.zalando.warehouse.user }}
   postgresql:
     version: "{{ .Values.zalando.warehouse.version }}"
 {{- end }}

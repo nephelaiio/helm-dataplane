@@ -3,6 +3,11 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+cdc:
+
+    postgres: []
+    mysql: []
+
 strimzi:
 
   debezium:
@@ -29,7 +34,14 @@ strimzi:
   connect:
     image: nephelaiio/dataplane-connect:latest
     replicas: 3
-    config: {}
+    config:
+      group.id: connect-cluster
+      offset.storage.topic: connect.cluster.offsets
+      config.storage.topic: connect.cluster.configs
+      status.storage.topic: connect.cluster.status
+      config.storage.replication.factor: 2
+      offset.storage.replication.factor: 2
+      status.storage.replication.factor: 2
     annotations:
       strimzi.io/use-connector-resources: "true"
 
@@ -82,6 +94,29 @@ metabase:
   service:
     type: ClusterIP
     port: 3000
+
+  podEnvironmentVars:
+    - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
+      value: "true"
+
+  securityContext: {}
+  podSecurityContext: {}
+  podAnnotations: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+registry:
+
+  image:
+    repository: confluentinc/cp-schema-registry
+    pullPolicy: IfNotPresent
+    tag: "5.4.10"
+
+  service:
+    type: ClusterIP
+    port: 8081
 
   podEnvironmentVars:
     - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"

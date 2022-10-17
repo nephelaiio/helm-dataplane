@@ -1,3 +1,7 @@
+{{- $cdcSecret := required "kafka postgres cdc secret name is required" .Values.strimzi.connect.secret }}
+{{- $dwSecret := include "dataplane.warehouse.secret" . -}}
+{{- $registryName := include "dataplane.registry.fullname" . -}}
+{{- $registryPort := .Values.registry.service.port -}}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
@@ -15,7 +19,35 @@ spec:
   image: {{ .Values.strimzi.connect.image }}
   replicas: {{ .Values.strimzi.connect.replicas }}
   bootstrapServers: {{ include "dataplane.strimzi.kafka.bootstrap" . }}:{{ .Values.strimzi.kafka.listener.plain.port }}
-  {{- with .Values.strimzi.connect.config }}
   config:
+    config.providers: env
+    config.providers.env.class: io.strimzi.kafka.EnvVarConfigProvider
+    key.converter: io.confluent.connect.avro.AvroConverter
+    key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
+    value.converter: io.confluent.connect.avro.AvroConverter
+    value.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
+  {{- with .Values.strimzi.connect.config }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  externalConfiguration:
+    env:
+      - name: POSTGRES_CDC_USER
+        valueFrom:
+          secretKeyRef:
+            name: {{ $cdcSecret }}
+            key: username
+      - name: POSTGRES_CDC_PASS
+        valueFrom:
+          secretKeyRef:
+            name: {{ $cdcSecret }}
+            key: password
+      - name: POSTGRES_DW_USER
+        valueFrom:
+          secretKeyRef:
+            name: {{ $dwSecret }}
+            key: username
+      - name: POSTGRES_DW_PASS
+        valueFrom:
+          secretKeyRef:
+            name: {{ $dwSecret }}
+            key: password
