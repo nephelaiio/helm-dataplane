@@ -1,4 +1,5 @@
-{{- $pgSecret := required "kafka postgres cdc secret name is required" .Values.strimzi.connect.secret }}
+{{- $cdcSecret := required "kafka postgres cdc secret name is required" .Values.strimzi.connect.secret }}
+{{- $dwSecret := include "dataplane.warehouse.secret" . -}}
 {{- $registryName := include "dataplane.registry.fullname" . -}}
 {{- $registryPort := .Values.registry.service.port -}}
 ---
@@ -30,13 +31,23 @@ spec:
   {{- end }}
   externalConfiguration:
     env:
-      - name: POSTGRES_USER
+      - name: POSTGRES_CDC_USER
         valueFrom:
           secretKeyRef:
-            name: {{ $pgSecret }}
+            name: {{ $cdcSecret }}
             key: username
-      - name: POSTGRES_PASS
+      - name: POSTGRES_CDC_PASS
         valueFrom:
           secretKeyRef:
-            name: {{ $pgSecret }}
+            name: {{ $cdcSecret }}
+            key: password
+      - name: POSTGRES_DW_USER
+        valueFrom:
+          secretKeyRef:
+            name: {{ $dwSecret }}
+            key: username
+      - name: POSTGRES_DW_PASS
+        valueFrom:
+          secretKeyRef:
+            name: {{ $dwSecret }}
             key: password

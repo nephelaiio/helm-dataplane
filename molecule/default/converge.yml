@@ -72,7 +72,8 @@
                 - superuser
                 - createdb
               {{ dataplane_pagila_user }}:
-                - superuser
+                - login
+                - replication
                 - createdb
             databases:
               {{ dataplane_pagila_db }}: {{ dataplane_pagila_user }}

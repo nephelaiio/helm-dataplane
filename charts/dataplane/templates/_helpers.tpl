@@ -190,13 +190,13 @@ Metabase DB user secret
 Warehouse cluster name
 */}}
 {{- define "dataplane.warehouse.cluster" -}}
-{{- (printf "%s-%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.warehouse.db" .) "db") -}}
+{{- (printf "%s-%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.warehouse.db" .) "db") -}}
 {{- end }}
 
 {{/*
 Warehouse DB name
 */}}
-{{- define "dataplane.zalando.warehouse.db" -}}
+{{- define "dataplane.warehouse.db" -}}
 {{ .Values.zalando.warehouse.name }}
 {{- end }}
 
