@@ -45,7 +45,6 @@ DOCKER_REGISTRY ?= localhost:5000/
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 KAFKA_RELEASE := $$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r)
-DEBEZIUM_RELEASE := $$(yq eval '.debezium.version' ../charts/dataplane/values.yaml -r)
 
 TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-init dataplane-connect images strimzi strimzi-topics
 
@@ -94,7 +93,7 @@ dataplane-init:
 
 dataplane-connect:
 	cd connect ; \
-	KAFKA_RELEASE=$(KAFKA_RELEASE) DEBEZIUM_RELEASE=$(DEBEZIUM_RELEASE) docker build \
+	KAFKA_RELEASE=$(KAFKA_RELEASE) docker build \
 		--rm \
 		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
 		. ; \
