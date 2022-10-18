@@ -29,7 +29,7 @@ strimzi:
       class: ""
 
   connect:
-    image: nephelaiio/dataplane-connect:latest
+    image: nephelaiio/dataplane-connect:0.0.2
     replicas: 3
     config:
       group.id: connect-cluster
