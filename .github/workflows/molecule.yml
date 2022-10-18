@@ -1,5 +1,5 @@
 ---
-name: Molecule
+name: molecule
 
 on:
 
@@ -31,14 +31,18 @@ jobs:
 
     name: molecule
     runs-on: ubuntu-latest
+
     strategy:
+
       matrix:
         scenario:
           - default
         include:
           - release: v0.16.0
             image: v1.24.6
+
     steps:
+
       - name: check out the codebase.
         uses: actions/checkout@v2
 
