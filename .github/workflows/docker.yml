@@ -20,11 +20,6 @@ jobs:
 
     steps:
 
-      - name: check out the codebase.
-        uses: actions/checkout@v2
-        with:
-          path: 'nephelaiio.k8s'
-
       - name: set up quemu
         uses: docker/setup-qemu-action@v2
 
@@ -40,6 +35,6 @@ jobs:
       - name: build and push
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: "{{defaultContext}}:connect"
           push: true
           tags: nephelaiio/dataplane-connect:${{  github.ref_name }}
