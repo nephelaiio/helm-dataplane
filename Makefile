@@ -2,7 +2,7 @@
 # nephelaiio.k8s Ansible role
 #
 # @file
-# @version 0.0.1
+# @version 0.0.3
 
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
@@ -85,6 +85,7 @@ images: dataplane-init dataplane-connect
 	curl -s http://localhost:5000/v2/_catalog | jq
 
 dataplane-init:
+	cd dataplane ; \
 	docker build \
 		--rm \
 		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
