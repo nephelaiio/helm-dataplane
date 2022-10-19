@@ -85,6 +85,9 @@ jobs:
           KIND_RELEASE: ${{ matrix.release }}
           KIND_IMAGE: ${{ matrix.image }}
 
+      - name: restart strimzi connectors
+        run: make strimzi-connector-restart
+
       - name: verify molecule test scenario
         run: make molecule verify -- -s ${{ matrix.scenario }}
         env:

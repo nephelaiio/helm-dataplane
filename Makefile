@@ -102,7 +102,40 @@ dataplane-connect:
 strimzi: strimzi-topics
 
 strimzi-topics:
-	make --no-print-directory kubectl exec -- -it pod/dataplane-strimzi-kafka-0 -n dataplane -- "/opt/kafka/bin/kafka-topics.sh --bootstrap-server dataplane-strimzi-kafka-bootstrap:9092 --list"
+	@make --no-print-directory kubectl exec -- -it pod/dataplane-strimzi-kafka-0 -n dataplane -- "/opt/kafka/bin/kafka-topics.sh --bootstrap-server dataplane-strimzi-kafka-bootstrap:9092 --list"
+
+strimzi-connectors:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s http://localhost:8083/connectors/\{\} 2>/dev/null
+
+strimzi-connector-status:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.state) | .[]' -r
+
+strimzi-connector-trace:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.trace) | .[]' -r
+
+strimzi-connector-restart:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s -XPOST http://localhost:8083/connectors/\{\}/restart 2>/dev/null ; \
+	make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s -XPOST http://localhost:8083/connectors/\{\}/tasks/0/restart 2>/dev/null
 
 dataplane:
 	@:

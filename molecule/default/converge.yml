@@ -148,8 +148,8 @@
         release_namespace: "{{ dataplane_namespace }}"
         create_namespace: true
         force: true
-        wait: false
-        timeout: 20m
+        wait: true
+        timeout: 30m
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
         values:
