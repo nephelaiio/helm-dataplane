@@ -15,13 +15,17 @@ In order of priority
 * Add initContainer for Metabase initialization
 * Add initContainer for Metabase Data Warehouse registration
 * Add Apache Flink deployment
+* Add table include/exclude support for cdc connectors
+* Add config options for warehouse backups
 
 ## Dependencies
 Chart depends on the following cluster levels components being deployed in the target cluster
 
 * Strimzi
 * Zalando
-* Ingress controller
+* Nginx Ingress controller
+* Storage controller 
+* Storage class
 
 Cluster dependencies are provisioned with role [nephelaiio.k8s](https://github.com/nephelaiio/ansible-role-k8s) in testing environment
 

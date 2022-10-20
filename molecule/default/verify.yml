@@ -66,7 +66,7 @@
 
     - name: record source table data
       ansible.builtin.set_fact:
-        source_tables: "{{ source_table_query.query_result | map(attribute='table_name') | list }}"
+        source_tables: "{{ source_table_query.query_result | map(attribute='table_name') | difference(['payment']) | list }}"
 
     - name: query source table data
       community.postgresql.postgresql_query:
