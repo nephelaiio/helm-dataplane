@@ -32,10 +32,5 @@ Cluster dependencies are provisioned with role [nephelaiio.k8s](https://github.c
 Testing is performed using molecule against a local single-node kind cluster using Github Actions and can be replicated locally for the latest supported cluster version using the following commands:
 
 ``` sh
-make molecule destroy
-make molecule create
-make molecule images
-make strimzi-connector-restart
-make molecule converge
-make molecule verify
+./bin/test
 ```
