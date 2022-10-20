@@ -60,6 +60,7 @@ spec:
       initContainers:
         - name: registry-init
           image: {{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}
+          imagePullPolicy: {{ .Values.busybox.image.pullPolicy }}
           command:
             - "sh"
             - "-c"
