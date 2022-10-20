@@ -1,9 +1,12 @@
+{{- $svcName :=  include "dataplane.registry.fullname" . }}
 {{- $svcPort := .Values.registry.service.port -}}
+{{- $bootstrapHost := include "dataplane.strimzi.kafka.bootstrap" . }}
+{{- $bootstrapPort := .Values.strimzi.kafka.listener.plain.port }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "dataplane.registry.fullname" . }}
+  name: {{ $svcName }}
   labels:
     {{- include "dataplane.registry.labels" . | nindent 4 }}
 spec:
@@ -50,10 +53,17 @@ spec:
             - name: SCHEMA_REGISTRY_HOST_NAME
               value: schema-registry
             - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
-              value: {{ include "dataplane.strimzi.kafka.bootstrap" . }}:{{ .Values.strimzi.kafka.listener.plain.port }}
+              value: {{ $bootstrapHost }}:{{ $bootstrapPort }}
           {{- with .Values.registry.podEnvironmentVars }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      initContainers:
+        - name: registry-init
+          image: {{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}
+          command:
+            - "sh"
+            - "-c"
+            - "until nc -w 1 -vz {{ $bootstrapHost }} {{ $bootstrapPort }}; do echo waiting for kafka broker ; sleep 10 ; done ;"
       {{- with .Values.registry.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
