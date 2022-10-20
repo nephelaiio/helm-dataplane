@@ -71,7 +71,7 @@
     - name: query source table data
       community.postgresql.postgresql_query:
         db: db
-        query: "SELECT * from {{ item }}"
+        query: "SELECT count(*) from {{ item }}"
         login_user: "{{ pagila_user }}"
         login_password: "{{ pagila_pass }}"
         login_host: "{{ pagila_host }}"
@@ -127,20 +127,10 @@
       retries: 10
       delay: 30
 
-    - name: record warehouse table fields
-      ansible.builtin.set_fact:
-        warehouse_fields: "{{ warehouse_fields | default({}) | combine({ table_name: table_fields }) }}"
-      vars:
-        table_name: "pagila_{{ item.key }}"
-        table_fields: "{{ item.value.query_result[0].keys() | list | difference(['fulltext']) }}"
-      loop_control:
-        label: "{{ item.key }}"
-      loop: "{{ source_data | dict2items }}"
-
     - name: query warehouse table data
       community.postgresql.postgresql_query:
         db: warehouse
-        query: "SELECT {{ warehouse_fields[item] | join(',') }} from {{ item }}"
+        query: "SELECT count(*) from {{ item }}"
         login_user: "{{ warehouse_user }}"
         login_password: "{{ warehouse_pass }}"
         login_host: "{{ warehouse_host }}"
@@ -157,13 +147,11 @@
       ansible.builtin.fail:
         msg: "warehouse data for table {{ source_table }} is incomplete, {{ warehouse_table_records }}/{{ source_table_records }} found"
       vars:
-        warehouse_table_data: "{{ warehouse_data[warehouse_table].query_result | list }}"
+        warehouse_table_records: "{{ (warehouse_data[warehouse_table].query_result | list)[0].count }}"
         warehouse_table: "pagila_{{ item }}"
-        warehouse_table_records: "{{ warehouse_table_data | length }}"
         source_table: "{{ item }}"
-        source_table_data: "{{ source_data[source_table].query_result | list }}"
-        source_table_records: "{{ source_table_data | length }}"
+        source_table_records: "{{ (source_data[source_table].query_result | list)[0].count }}"
       loop_control:
         label: "{{ source_table }}"
-      loop: "{{ (source_data.keys() | list)[0:1]  }}"
+      loop: "{{ (source_data.keys() | list) }}"
       when: source_table_records > warehouse_table_records
