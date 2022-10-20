@@ -14,7 +14,6 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 In order of priority
 * Add initContainer for Metabase initialization
 * Add initContainer for Metabase Data Warehouse registration
-* Add data quality tests
 * Add Apache Flink deployment
 
 ## Dependencies

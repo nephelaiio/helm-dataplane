@@ -20,13 +20,6 @@ PAGILA_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_pagil
 PAGILA_PASS := $$(make --no-print-directory kubectl get secret $(PAGILA_USER)-$(PAGILA_TEAM)-$(PAGILA_DB) -- -n $(PAGILA_NS) -o json | jq '.data.password' -r | base64 -d )
 PAGILA_HOST := $$(make --no-print-directory kubectl get service -- -n $(PAGILA_NS) -o json | jq ".items | map(select(.metadata.name == \"$(PAGILA_TEAM)-$(PAGILA_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-SAGILA_DB := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_db' molecule/default/molecule.yml -r)
-SAGILA_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_namespace' molecule/default/molecule.yml -r)
-SAGILA_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_team' molecule/default/molecule.yml -r)
-SAGILA_USER := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_sagila_user' molecule/default/molecule.yml -r)
-SAGILA_PASS := $$(make --no-print-directory kubectl get secret $(SAGILA_USER)-$(SAGILA_TEAM)-$(SAGILA_DB) -- -n $(SAGILA_NS) -o json | jq '.data.password' -r | base64 -d )
-SAGILA_HOST := $$(make --no-print-directory kubectl get service -- -n $(SAGILA_NS) -o json | jq ".items | map(select(.metadata.name == \"$(SAGILA_TEAM)-$(SAGILA_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
-
 METABASE_DB := metabase
 METABASE_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_namespace' molecule/default/molecule.yml -r)
 METABASE_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_chart' molecule/default/molecule.yml -r)
@@ -71,9 +64,6 @@ poetry:
 pagila:
 	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
 
-sagila:
-	PGPASSWORD=$(SAGILA_PASS) psql -h $(SAGILA_HOST) -U $(SAGILA_USER) $(SAGILA_DB)
-
 metabase:
 	PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) $(METABASE_DB)
 
@@ -103,6 +93,39 @@ strimzi: strimzi-topics
 
 strimzi-topics:
 	make --no-print-directory kubectl exec -- -it pod/dataplane-strimzi-kafka-0 -n dataplane -- "/opt/kafka/bin/kafka-topics.sh --bootstrap-server dataplane-strimzi-kafka-bootstrap:9092 --list"
+
+strimzi-connectors:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s http://localhost:8083/connectors/\{\} 2>/dev/null
+
+strimzi-connector-status:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.state) | .[]' -r
+
+strimzi-connector-trace:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.trace) | .[]' -r
+
+strimzi-connector-restart:
+	@make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s -XPOST http://localhost:8083/connectors/\{\}/restart 2>/dev/null ; \
+	make --no-print-directory kubectl exec -- -it svc/dataplane-connect-api -n dataplane -- \
+		curl -s http://localhost:8083/connectors \
+		| jq '.[]' -r \
+		| xargs -I{} make --no-print-directory kubectl exec svc/dataplane-connect-api -- -it -n dataplane -- \
+		curl -s -XPOST http://localhost:8083/connectors/\{\}/tasks/0/restart 2>/dev/null
 
 dataplane:
 	@:
