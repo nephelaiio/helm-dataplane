@@ -12,17 +12,19 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 
 ## TODO
 In order of priority
-* Add initContainer for Metabase initialization
-* Add initContainer for Metabase Data Warehouse registration
-* Add data quality tests
+* Add sidecar container for Metabase setup
+* Add sidecar for warehouse registration into Metabase
+* Add table exclude support for cdc connectors
+* Add config options for warehouse backups
 * Add Apache Flink deployment
 
 ## Dependencies
 Chart depends on the following cluster levels components being deployed in the target cluster
 
-* Strimzi
-* Zalando
-* Ingress controller
+* Strimzi Kafka controller
+* Zalando Postgres controller
+* Nginx Ingress controller
+* Storage class with ReclaimPolicy=Retain 
 
 Cluster dependencies are provisioned with role [nephelaiio.k8s](https://github.com/nephelaiio/ansible-role-k8s) in testing environment
 
@@ -30,13 +32,5 @@ Cluster dependencies are provisioned with role [nephelaiio.k8s](https://github.c
 Testing is performed using molecule against a local single-node kind cluster using Github Actions and can be replicated locally for the latest supported cluster version using the following commands:
 
 ``` sh
-make molecule converge
-make molecule verify
+./bin/test
 ```
-
-Or as a single command
-
-``` sh
-make molecule test
-```
-

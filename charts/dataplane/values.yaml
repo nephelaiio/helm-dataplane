@@ -132,3 +132,10 @@ registry:
   tolerations: []
 
   affinity: {}
+
+busybox:
+
+  image:
+    repository: busybox
+    pullPolicy: IfNotPresent
+    tag: "1.35.0"

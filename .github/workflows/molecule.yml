@@ -46,6 +46,12 @@ jobs:
       - name: check out the codebase.
         uses: actions/checkout@v2
 
+      - name: login to docker hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
       - name: install kubectl
         uses: azure/setup-kubectl@v3
 
@@ -66,27 +72,8 @@ jobs:
       - name: install make
         run: sudo apt-get install -y make
 
-      - name: create molecule test scenario
-        run: make molecule create -- -s ${{ matrix.scenario }}
-        env:
-          PY_COLORS: '1'
-          ANSIBLE_FORCE_COLOR: '1'
-          KIND_RELEASE: ${{ matrix.release }}
-          KIND_IMAGE: ${{ matrix.image }}
-
-      - name: publish test images
-        run: make images
-
-      - name: converge molecule test scenario
-        run: make molecule converge -- -s ${{ matrix.scenario }}
-        env:
-          PY_COLORS: '1'
-          ANSIBLE_FORCE_COLOR: '1'
-          KIND_RELEASE: ${{ matrix.release }}
-          KIND_IMAGE: ${{ matrix.image }}
-
-      - name: verify molecule test scenario
-        run: make molecule verify -- -s ${{ matrix.scenario }}
+      - name: run molecule tests
+        run: ./bin/test
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
