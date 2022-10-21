@@ -16,6 +16,8 @@ In order of priority
 * Add sidecar for warehouse registration into Metabase
 * Add table exclude support for cdc connectors
 * Add config options for warehouse backups
+* Test table field add operation
+* Test table delete operation
 * Add Apache Flink deployment
 
 ## Dependencies

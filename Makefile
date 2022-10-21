@@ -2,7 +2,7 @@
 # nephelaiio.k8s Ansible role
 #
 # @file
-# @version 0.0.1
+# @version 0.0.4
 
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
