@@ -60,7 +60,7 @@ spec:
                   name: {{ include "dataplane.metabase.setup.secret.name" . }}
                   key: adminPassword
           command: ['python', 'setup.py']
-          args: ['--url=$(MB_SITE_URL)', '--setup-email=$(MB_ADMIN_EMAIL)', '--setup-firstname=$(MB_ADMIN_FIRSTNAME)', '--setup-lastname=$(MB_ADMIN_LASTNAME)', '--setup-password=$(MB_ADMIN_PASSWORD)', '--retries=$(INIT_RETRIES', '--backoff-in-seconds=$(INIT_BACKOFF_SECONDS)']
+          args: ['--url=$(MB_SITE_URL)', '--setup-email=$(MB_ADMIN_EMAIL)', '--setup-firstname=$(MB_ADMIN_FIRSTNAME)', '--setup-lastname=$(MB_ADMIN_LASTNAME)', '--setup-password=$(MB_ADMIN_PASSWORD)', '--retries=$(INIT_RETRIES)', '--backoff-in-seconds=$(INIT_BACKOFF_SECONDS)']
         {{- end }}
         - name: {{ .Chart.Name }}
           securityContext:
