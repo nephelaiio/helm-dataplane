@@ -124,7 +124,7 @@
         warehouse_tables_expected: "{{ source_tables | map('map_format', 'pagila_%s') | list }}"
         warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
       register: warehouse_table_query
-      retries: 20
+      retries: 40
       delay: 30
       until: warehouse_tables_expected | difference(warehouse_tables_found) | length == 0
 
