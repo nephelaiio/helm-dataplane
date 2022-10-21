@@ -182,7 +182,7 @@ Metabase DB name
 {{/*
 Metabase DB user secret
  */}}
-{{- define "dataplane.metabase.secret" -}}
+{{- define "dataplane.metabase.db.secret" -}}
 {{ .Values.zalando.metabase.user }}-{{- include "dataplane.metabase.cluster" . -}}
 {{- end }}
 
@@ -208,9 +208,9 @@ Warehouse DB user secret
 {{- end }}
 
 {{/*
-TLS secret name
+Metabase TLS secret name
 */}}
-{{- define "dataplane.metabase.ingress.secretName" -}}
+{{- define "dataplane.metabase.ingress.secret.name" -}}
 {{- if .Values.metabase.ingress.secretName }}
 {{- .Values.metabase.ingress.secretName }}
 {{- else }}
@@ -219,26 +219,26 @@ TLS secret name
 {{- end }}
 
 {{/*
-API secret name
+Metabase setup secret name
 */}}
-{{- define "dataplane.metabase.api.secret.name" -}}
+{{- define "dataplane.metabase.setup.secret.name" -}}
 {{- (printf "%s-%s" (include "dataplane.release" .) "metabase-api-token") -}}
 {{- end }}
 
 {{/*
-Stable API secret data
+Metabase setup secret data
 */}}
-{{- define "dataplane.metabase.api.secret" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.metabase.api.secret.name" .) -}}
+{{- define "dataplane.metabase.setup.secret.data" -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.metabase.setup.secret.name" .) -}}
 {{- if $secret -}}
 {{/*
-   Reusing existing secret data
+   Reuse existing secret data
 */}}
-apiKey: {{ $secret.data.apiKey }}
+adminPassword: {{ $secret.data.adminPassword }}
 {{- else -}}
 {{/*
     Generate new secret
 */}}
-apiKey: {{ randAlphaNum 16 | b64enc }}
+adminPassword: {{ randAlphaNum 16 | b64enc }}
 {{- end -}}
 {{- end -}}

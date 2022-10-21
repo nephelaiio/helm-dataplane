@@ -76,6 +76,24 @@ metabase:
 
   replicaCount: 2
 
+  initialSetup:
+    enabled: true
+
+    image:
+      repository: josesolisrosales/metabase-init
+      pullPolicy: Always
+      tag: "1.1.0"
+
+    retries: 6
+    backoffSeconds: 2
+
+    user:
+      firstName: John
+      lastName: Doe
+      email: jdoe@test.test
+
+    securityContext: {}
+
   image:
     repository: metabase/metabase
     pullPolicy: IfNotPresent
