@@ -40,7 +40,7 @@ DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 KAFKA_RELEASE := $$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r)
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-init dataplane-connect images strimzi strimzi-topics
+TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images strimzi strimzi-topics
 
 .PHONY: $(TARGETS)
 
@@ -71,16 +71,9 @@ metabase:
 warehouse:
 	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
 
-images: dataplane-init dataplane-connect
+images: dataplane-connect
 	docker image prune --force; \
 	curl -s http://localhost:5000/v2/_catalog | jq
-
-dataplane-init:
-	docker build \
-		--rm \
-		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
-		. ; \
-	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 dataplane-connect:
 	cd connect ; \
