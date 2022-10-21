@@ -29,7 +29,7 @@ strimzi:
       class: ""
 
   connect:
-    image: nephelaiio/dataplane-connect:0.0.4
+    image: nephelaiio/dataplane-connect:0.0.5
     replicas: 3
     config:
       group.id: connect-cluster
@@ -76,10 +76,28 @@ metabase:
 
   replicaCount: 2
 
+  initialSetup:
+    enabled: true
+
+    image:
+      repository: josesolisrosales/metabase-init
+      pullPolicy: Always
+      tag: "1.1.0"
+
+    retries: 6
+    backoffSeconds: 2
+
+    user:
+      firstName: John
+      lastName: Doe
+      email: jdoe@test.test
+
+    securityContext: {}
+
   image:
     repository: metabase/metabase
     pullPolicy: IfNotPresent
-    tag: ""
+    tag: "v0.44.2"
 
   ingress:
     enabled: false
