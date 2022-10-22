@@ -71,14 +71,6 @@ spec:
             - name: http
               containerPort: {{ $svcPort }}
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
           resources:
             {{- toYaml .Values.metabase.resources | nindent 12 }}
           env:

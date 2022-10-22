@@ -6,7 +6,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $svcName }}
+  name: {{ $svcName }}-connector-restart
 spec:
   template:
     spec:
