@@ -7,13 +7,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ $svcName }}
-  labels:
-    {{- include "dataplane.registry.labels" . | nindent 4 }}
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      {{- include "dataplane.registry.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.registry.podAnnotations }}
@@ -24,6 +18,7 @@ spec:
         {{- include "dataplane.registry.selectorLabels" . | nindent 8 }}
     spec:
       restartPolicy: OnFailure
+      backoffLimit: 4
       containers:
         - name: connector-restart
           securityContext:
