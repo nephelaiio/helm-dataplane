@@ -9,16 +9,8 @@ metadata:
   name: {{ $svcName }}
 spec:
   template:
-    metadata:
-      {{- with .Values.registry.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      labels:
-        {{- include "dataplane.registry.selectorLabels" . | nindent 8 }}
     spec:
       restartPolicy: OnFailure
-      backoffLimit: 4
       containers:
         - name: connector-restart
           securityContext:

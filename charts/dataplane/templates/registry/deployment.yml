@@ -60,7 +60,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
       initContainers:
-        - name: -init
+        - name: init
           image: {{ .Values.registry.utilImage.repository }}:{{ .Values.registry.utilImage.tag }}
           imagePullPolicy: {{ .Values.registry.utilImage.pullPolicy }}
           command:
