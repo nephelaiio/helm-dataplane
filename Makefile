@@ -38,9 +38,8 @@ WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREH
 DOCKER_REGISTRY ?= localhost:5000/
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
-KAFKA_RELEASE := $$(yq eval '.strimzi.kafka.version' ../charts/dataplane/values.yaml -r)
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images strimzi strimzi-topics
+TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images wait strimzi strimzi-topics strimzi-connectors strimzi-connector-status strimzi-connector-trace strimzi-connector-restart
 
 .PHONY: $(TARGETS)
 
@@ -63,25 +62,38 @@ poetry:
 	@poetry install --only dev --no-root
 
 pagila:
-	PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) $(PAGILA_DB)
+	@PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) -d $(PAGILA_DB) $(filter-out $@,$(MAKECMDGOALS))
 
 metabase:
-	PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) $(METABASE_DB)
+	@PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) -d $(METABASE_DB) $(filter-out $@,$(MAKECMDGOALS))
 
 warehouse:
-	PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) $(WAREHOUSE_DB)
+	@PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) -d $(WAREHOUSE_DB) $(filter-out $@,$(MAKECMDGOALS))
 
-images: dataplane-connect
+images: dataplane-connect dataplane-util
 	docker image prune --force; \
 	curl -s http://localhost:5000/v2/_catalog | jq
 
 dataplane-connect:
 	cd connect ; \
-	KAFKA_RELEASE=$(KAFKA_RELEASE) docker build \
+	docker build \
 		--rm \
 		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
 		. ; \
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
+
+dataplane-util:
+	cd util ; \
+	docker build \
+		--rm \
+		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		. ; \
+	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
+
+wait:
+	@echo wait for service startup ; \
+	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-registry -- -n $(DATAPLANE_NS) ; \
+	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-connect -- -n $(DATAPLANE_NS) ; \
 
 strimzi: strimzi-topics
 
@@ -109,11 +121,8 @@ strimzi-connector-trace:
 		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.trace) | .[]' -r
 
-strimzi-connector-restart:
-	@echo wait for service startup ; \
-	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-registry -- -n $(DATAPLANE_NS) ; \
-	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-connect -- -n $(DATAPLANE_NS) ; \
-	echo restart kafka connectors ; \
+strimzi-connector-restart: wait
+	@echo restart kafka connectors ; \
 	make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors \
 		| jq '.[]' -r \

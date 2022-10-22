@@ -116,6 +116,10 @@
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
         values:
+          registry:
+            utilImage:
+              repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
+              tag: latest
           cdc:
             postgres:
               - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
@@ -124,7 +128,9 @@
                 dbname: db
           strimzi:
             connect:
-              image: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect:latest"
+              image:
+                repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect"
+                tag: latest
               secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
             kafka:
               storage:

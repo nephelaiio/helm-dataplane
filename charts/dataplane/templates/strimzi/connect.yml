@@ -16,7 +16,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  image: {{ .Values.strimzi.connect.image }}
+  image: {{ .Values.strimzi.connect.image.repository }}:{{ .Values.strimzi.connect.image.tag }}
   replicas: {{ .Values.strimzi.connect.replicas }}
   bootstrapServers: {{ include "dataplane.strimzi.kafka.bootstrap" . }}:{{ .Values.strimzi.kafka.listener.plain.port }}
   config:

@@ -1,8 +1,18 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+set -e
+
+function debug {
+    make kubectl get all -- -n dataplane
+    make strimzi-connector-trace
+    make strimzi-connector-status
+    make warehouse -- -c "'\dt'"
+}
+
+trap debug EXIT
 
 make molecule destroy && \
     make molecule create && \
     make images && \
     make molecule converge && \
-    make strimzi-connector-restart && \
+    make wait && \
     make molecule verify

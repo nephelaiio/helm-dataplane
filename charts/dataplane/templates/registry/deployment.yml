@@ -1,3 +1,5 @@
+{{- $connectSvc := printf "%s-%s" (include "dataplane.strimzi.connect.fullname" .) "connect-api" }}
+{{- $connectPort := 8083 }}
 {{- $svcName :=  include "dataplane.registry.fullname" . }}
 {{- $svcPort := .Values.registry.service.port -}}
 {{- $bootstrapHost := include "dataplane.strimzi.kafka.bootstrap" . }}
@@ -30,7 +32,7 @@ spec:
       securityContext:
         {{- toYaml .Values.registry.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: registry-web
           securityContext:
             {{- toYaml .Values.registry.securityContext | nindent 12 }}
           image: "{{ .Values.registry.image.repository }}:{{ .Values.registry.image.tag | default .Chart.AppVersion }}"
@@ -43,10 +45,12 @@ spec:
             httpGet:
               path: /
               port: http
+            initialDelaySeconds: {{ .Values.registry.probeDelay }}
           readinessProbe:
             httpGet:
               path: /
               port: http
+            initialDelaySeconds: {{ .Values.registry.probeDelay }}
           resources:
             {{- toYaml .Values.registry.resources | nindent 12 }}
           env:
@@ -57,14 +61,58 @@ spec:
           {{- with .Values.registry.podEnvironmentVars }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      initContainers:
-        - name: registry-init
-          image: {{ .Values.busybox.image.repository }}:{{ .Values.busybox.image.tag }}
-          imagePullPolicy: {{ .Values.busybox.image.pullPolicy }}
+        - name: connector-restart
+          securityContext:
+            {{- toYaml .Values.registry.securityContext | nindent 12 }}
+          image: {{ .Values.registry.utilImage.repository }}:{{ .Values.registry.utilImage.tag }}
+          imagePullPolicy: {{ .Values.registry.utilImage.pullPolicy }}
+          resources:
+            requests:
+              cpu: 500m
+              memory: 200Mi
+            limits:
+              cpu: 500m
+              memory: 200Mi
           command:
             - "sh"
             - "-c"
-            - "until nc -w 1 -vz {{ $bootstrapHost }} {{ $bootstrapPort }}; do echo waiting for kafka broker ; sleep 10 ; done ;"
+            - >-
+              until curl -s http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
+                echo waiting for registry service;
+                sleep 10;
+              done;
+              echo registry service up;
+              until curl -s http://{{ $connectSvc }}:{{ $connectPort }}/ -o /dev/null; do
+                echo waiting for connect api service;
+                sleep 10;
+              done;
+              echo connect api service up;
+              sleep 10;
+              echo restarting connectors;
+              curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
+                xargs -I{} curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/restart;
+              echo connectors restarted;
+              echo restarting tasks;
+              curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
+                xargs -I{} bash -c "curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks |
+                   jq 'map(.id.task) | .[]' -r |
+                   xargs -I[] curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks/[]/restart"
+              echo tasks restarted;
+              tail -f /dev/null;
+      initContainers:
+        - name: registry-init
+          image: {{ .Values.registry.utilImage.repository }}:{{ .Values.registry.utilImage.tag }}
+          imagePullPolicy: {{ .Values.registry.utilImage.pullPolicy }}
+          command:
+            - sh
+            - "-c"
+            - >-
+              echo wait for kafka broker;
+              until nc -w 1 -vz {{ $bootstrapHost }} {{ $bootstrapPort }} 2>/dev/null; do
+                echo waiting for kafka broker;
+                sleep 10;
+              done;
+              echo kafka broker up;
       {{- with .Values.registry.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

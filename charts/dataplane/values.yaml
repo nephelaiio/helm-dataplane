@@ -29,7 +29,11 @@ strimzi:
       class: ""
 
   connect:
-    image: nephelaiio/dataplane-connect:0.0.5
+
+    image:
+      repository: nephelaiio/dataplane-connect
+      latest: 0.0.5
+
     replicas: 3
     config:
       group.id: connect-cluster
@@ -124,6 +128,11 @@ metabase:
 
 registry:
 
+  utilImage:
+    repository: nephelaiio/dataplane-util
+    pullPolicy: IfNotPresent
+    tag: 0.0.5
+
   image:
     repository: confluentinc/cp-schema-registry
     pullPolicy: IfNotPresent
@@ -132,6 +141,8 @@ registry:
   service:
     type: ClusterIP
     port: 8081
+
+  probeDelay: 10
 
   podEnvironmentVars:
     - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
@@ -150,10 +161,3 @@ registry:
   tolerations: []
 
   affinity: {}
-
-busybox:
-
-  image:
-    repository: busybox
-    pullPolicy: IfNotPresent
-    tag: "1.35.0"
