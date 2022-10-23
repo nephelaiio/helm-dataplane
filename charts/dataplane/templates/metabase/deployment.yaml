@@ -28,41 +28,7 @@ spec:
       securityContext:
         {{- toYaml .Values.metabase.podSecurityContext | nindent 8 }}
       containers:
-        {{- if .Values.metabase.initialSetup.enabled }}
-        - name: metabase-init
-          securityContext:
-            {{- toYaml .Values.metabase.initialSetup.securityContext | nindent 12 }}
-          image: "{{ .Values.metabase.initialSetup.image.repository }}:{{ .Values.metabase.initialSetup.image.tag }}"
-          imagePullPolicy: {{ .Values.metabase.initialSetup.image.pullPolicy }}
-          resources:
-            requests:
-              cpu: 500m
-              memory: 200Mi
-            limits:
-              cpu: 500m
-              memory: 200Mi
-          env:
-            - name: "INIT_RETRIES"
-              value: "{{ .Values.metabase.initialSetup.retries }}"
-            - name: "INIT_BACKOFF_SECONDS"
-              value: "{{ .Values.metabase.initialSetup.backoffSeconds }}"
-            - name: "MB_SITE_URL"
-              value: "https://{{ .Values.metabase.ingress.hostName }}"
-            - name: "MB_ADMIN_FIRSTNAME"
-              value: "{{ .Values.metabase.initialSetup.user.firstName }}"
-            - name: "MB_ADMIN_LASTNAME"
-              value: "{{ .Values.metabase.initialSetup.user.lastName }}"
-            - name: "MB_ADMIN_EMAIL"
-              value: "{{ .Values.metabase.initialSetup.user.email }}"
-            - name: "MB_ADMIN_PASSWORD"
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "dataplane.metabase.setup.secretName" . }}
-                  key: adminPassword
-          command: ['python', 'setup.py']
-          args: ['--url=$(MB_SITE_URL)', '--setup-email=$(MB_ADMIN_EMAIL)', '--setup-firstname=$(MB_ADMIN_FIRSTNAME)', '--setup-lastname=$(MB_ADMIN_LASTNAME)', '--setup-password=$(MB_ADMIN_PASSWORD)', '--retries=$(INIT_RETRIES)', '--backoff-in-seconds=$(INIT_BACKOFF_SECONDS)']
-        {{- end }}
-        - name: {{ .Chart.Name }}
+        - name: metabase
           securityContext:
             {{- toYaml .Values.metabase.securityContext | nindent 12 }}
           image: "{{ .Values.metabase.image.repository }}:{{ .Values.metabase.image.tag }}"
