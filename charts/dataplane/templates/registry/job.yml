@@ -49,4 +49,3 @@ spec:
                    jq 'map(.id.task) | .[]' -r |
                    xargs -I[] curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks/[]/restart"
               echo tasks restarted;
-              tail -f /dev/null;

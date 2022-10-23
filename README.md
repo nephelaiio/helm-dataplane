@@ -12,9 +12,11 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 
 ## TODO
 In order of priority
-* Add sidecar for warehouse registration into Metabase
+* Test Metabase setup
+* Add warehouse registration to Metabase setup job
 * Add table exclude support for cdc connectors
 * Add config options for warehouse backups
+* Add Kafdrop monitoring with OAuth2 reverse proxy
 * Test table field add operation
 * Test table delete operation
 * Add Apache Flink deployment
