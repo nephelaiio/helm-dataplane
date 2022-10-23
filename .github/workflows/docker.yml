@@ -32,9 +32,16 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
-      - name: build and push
+      - name: build and push connect image
         uses: docker/build-push-action@v3
         with:
           context: "{{defaultContext}}:connect"
           push: true
           tags: nephelaiio/dataplane-connect:${{  github.ref_name }}
+
+      - name: build and push util image
+        uses: docker/build-push-action@v3
+        with:
+          context: "{{defaultContext}}:util"
+          push: true
+          tags: nephelaiio/dataplane-util:${{  github.ref_name }}

@@ -20,7 +20,7 @@
     - name: nephelaiio.plugins
       when: true
     - name: nephelaiio.k8s
-      when: false
+      when: true
 
   tasks:
 

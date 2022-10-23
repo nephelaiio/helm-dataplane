@@ -28,23 +28,15 @@ spec:
       securityContext:
         {{- toYaml .Values.metabase.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: metabase
           securityContext:
             {{- toYaml .Values.metabase.securityContext | nindent 12 }}
-          image: "{{ .Values.metabase.image.repository }}:{{ .Values.metabase.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.metabase.image.repository }}:{{ .Values.metabase.image.tag }}"
           imagePullPolicy: {{ .Values.metabase.image.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ $svcPort }}
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
           resources:
             {{- toYaml .Values.metabase.resources | nindent 12 }}
           env:
