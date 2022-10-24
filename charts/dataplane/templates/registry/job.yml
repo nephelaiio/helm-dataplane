@@ -2,11 +2,12 @@
 {{- $connectPort := 8083 }}
 {{- $svcName :=  include "dataplane.registry.fullname" . }}
 {{- $svcPort := .Values.registry.service.port -}}
+{{- $jobName := {{ $svcName }}-connector-restart }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $svcName }}-connector-restart
+  name: {{ $jobName }}
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-10"
@@ -33,23 +34,23 @@ spec:
             - "-c"
             - >-
               until curl -s http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
-                echo waiting for registry service;
+                echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] waiting for registry service";
                 sleep 10;
               done;
               echo registry service up;
               until curl -s http://{{ $connectSvc }}:{{ $connectPort }}/ -o /dev/null; do
-                echo waiting for connect api service;
+                echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] waiting for connect api service";
                 sleep 10;
               done;
-              echo connect api service up;
+              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] connect api service up";
               sleep 10;
-              echo restarting connectors;
+              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] restarting connectors";
               curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
                 xargs -I{} curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/restart;
-              echo connectors restarted;
-              echo restarting tasks;
+              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] connectors restarted";
+              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] restarting tasks";
               curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
                 xargs -I{} bash -c "curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks |
                    jq 'map(.id.task) | .[]' -r |
                    xargs -I[] curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks/[]/restart"
-              echo tasks restarted;
+              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] tasks restarted";

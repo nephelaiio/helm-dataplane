@@ -5,6 +5,7 @@ function debug {
     make kubectl get all -- -n dataplane
     make strimzi-connector-trace
     make strimzi-connector-status
+    make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl logs {} -- -n dataplane
     make warehouse -- -c "'\dt'"
 }
 
