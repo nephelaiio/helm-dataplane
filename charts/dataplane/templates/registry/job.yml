@@ -34,23 +34,23 @@ spec:
             - "-c"
             - >-
               until curl -s http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
-                echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] waiting for registry service";
+                echo "[$(date -Iseconds)] [INFO] [connector-restart] waiting for registry service";
                 sleep 10;
               done;
               echo registry service up;
               until curl -s http://{{ $connectSvc }}:{{ $connectPort }}/ -o /dev/null; do
-                echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] waiting for connect api service";
+                echo "[$(date -Iseconds)] [INFO] [connector-restart] waiting for connect api service";
                 sleep 10;
               done;
-              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] connect api service up";
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] connect api service up";
               sleep 10;
-              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] restarting connectors";
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] restarting connectors";
               curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
                 xargs -I{} curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/restart;
-              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] connectors restarted";
-              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] restarting tasks";
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] connectors restarted";
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] restarting tasks";
               curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
                 xargs -I{} bash -c "curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks |
                    jq 'map(.id.task) | .[]' -r |
                    xargs -I[] curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks/[]/restart"
-              echo "[$(date -Iseconds)] [INFO] [{{ $jobName }}] tasks restarted";
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] tasks restarted";
