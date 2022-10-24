@@ -14,5 +14,6 @@ make molecule destroy && \
     make molecule create && \
     make images && \
     make molecule converge && \
-    make strimzi-connector-restart && \
-    make molecule verify
+    make wait && \
+    make molecule verify && \
+    make molecule side-effect

@@ -1,9 +1,14 @@
 {{- $svcName := include "dataplane.metabase.fullname" . }}
+{{- if .Values.metabase.initialSetup.enabled }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ $svcName }}-setup
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation
 spec:
   template:
     spec:
@@ -41,3 +46,4 @@ spec:
                   key: adminPassword
           command: ['python', 'setup.py']
           args: ['--url=$(MB_SITE_URL)', '--setup-email=$(MB_ADMIN_EMAIL)', '--setup-firstname=$(MB_ADMIN_FIRSTNAME)', '--setup-lastname=$(MB_ADMIN_LASTNAME)', '--setup-password=$(MB_ADMIN_PASSWORD)', '--retries=$(INIT_RETRIES)', '--backoff-in-seconds=$(INIT_BACKOFF_SECONDS)']
+{{- end }}

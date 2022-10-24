@@ -1,0 +1,26 @@
+---
+- name: side effect
+
+  hosts: localhost
+
+  gather_facts: false
+
+  roles:
+
+    - nephelaiio.plugins
+
+  tasks:
+
+    - name: deploy metabase helm chart
+      kubernetes.core.helm:
+        state: present
+        name: "{{ dataplane_chart }}"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
+        release_namespace: "{{ dataplane_namespace }}"
+        create_namespace: true
+        force: true
+        wait: false
+        timeout: 20m
+        kubeconfig: "{{ k8s_kubeconfig }}"
+        binary_path: "{{ k8s_helm_bin }}"
+        values: "{{ dataplane_chart_values }}"
