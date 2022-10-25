@@ -167,27 +167,19 @@ registry:
   affinity: {}
 
   init:
+
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
       tag: 0.0.5
-    resources:
-      requests:
-        cpu: 500m
-        memory: 200Mi
-      limits:
-        cpu: 500m
-        memory: 200Mi
+
+    resources: {}
 
   hook:
+
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
       tag: 0.0.5
-    resources:
-      requests:
-        cpu: 500m
-        memory: 200Mi
-      limits:
-        cpu: 500m
-        memory: 200Mi
+
+    resources: {}

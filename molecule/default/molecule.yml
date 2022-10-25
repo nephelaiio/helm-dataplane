@@ -65,12 +65,10 @@ provisioner:
           dataplane_chart_values:
             registry:
               init:
-                resources: {}
                 image:
                   repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
                   tag: latest
               hook:
-                resources: {}
                 image:
                   repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
                   tag: latest
