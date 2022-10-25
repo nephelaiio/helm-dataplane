@@ -64,9 +64,16 @@ provisioner:
           dataplane_metabase_hostname: "metabase.{{ k8s_cluster_name }}"
           dataplane_chart_values:
             registry:
-              utilImage:
-                repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
-                tag: latest
+              init:
+                resources: {}
+                image:
+                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
+                  tag: latest
+              hook:
+                resources: {}
+                image:
+                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
+                  tag: latest
             cdc:
               postgres:
                 - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
@@ -101,7 +108,7 @@ provisioner:
                 loadBalancer: true
                 allowedSourceRanges: 0.0.0.0/0
             metabase:
-              initialSetup:
+              init:
                 enabled: false
               ingress:
                 enabled: true

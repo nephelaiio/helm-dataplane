@@ -80,12 +80,13 @@ metabase:
 
   replicaCount: 2
 
-  initialSetup:
+  init:
+
     enabled: true
 
     image:
       repository: josesolisrosales/metabase-init
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
       tag: "1.1.0"
 
     retries: 6
@@ -97,6 +98,14 @@ metabase:
       email: jdoe@test.test
 
     securityContext: {}
+
+    resources:
+      requests:
+        cpu: 500m
+        memory: 200Mi
+      limits:
+        cpu: 500m
+        memory: 200Mi
 
   image:
     repository: metabase/metabase
@@ -128,11 +137,6 @@ metabase:
 
 registry:
 
-  utilImage:
-    repository: nephelaiio/dataplane-util
-    pullPolicy: IfNotPresent
-    tag: 0.0.5
-
   image:
     repository: confluentinc/cp-schema-registry
     pullPolicy: IfNotPresent
@@ -161,3 +165,29 @@ registry:
   tolerations: []
 
   affinity: {}
+
+  init:
+    image:
+      repository: nephelaiio/dataplane-util
+      pullPolicy: IfNotPresent
+      tag: 0.0.5
+    resources:
+      requests:
+        cpu: 500m
+        memory: 200Mi
+      limits:
+        cpu: 500m
+        memory: 200Mi
+
+  hook:
+    image:
+      repository: nephelaiio/dataplane-util
+      pullPolicy: IfNotPresent
+      tag: 0.0.5
+    resources:
+      requests:
+        cpu: 500m
+        memory: 200Mi
+      limits:
+        cpu: 500m
+        memory: 200Mi

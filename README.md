@@ -17,7 +17,7 @@ In order of priority
 * Add table exclude support for cdc connectors
 * Add config options for warehouse backups
 * Add Kafdrop monitoring with OAuth2 reverse proxy
-* Test table field add operation
+* Test table add operation
 * Test table delete operation
 * Add Apache Flink deployment
 

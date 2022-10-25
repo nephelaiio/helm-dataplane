@@ -19,15 +19,10 @@ spec:
         - name: connector-restart
           securityContext:
             {{- toYaml .Values.registry.securityContext | nindent 12 }}
-          image: {{ .Values.registry.utilImage.repository }}:{{ .Values.registry.utilImage.tag }}
-          imagePullPolicy: {{ .Values.registry.utilImage.pullPolicy }}
+          image: {{ .Values.registry.hook.image.repository }}:{{ .Values.registry.hook.image.tag }}
+          imagePullPolicy: {{ .Values.registry.hook.pullPolicy }}
           resources:
-            requests:
-              cpu: 500m
-              memory: 200Mi
-            limits:
-              cpu: 500m
-              memory: 200Mi
+            {{- toYaml .Values.registry.hook.resources | nindent 12 }}
           command:
             - "sh"
             - "-c"
