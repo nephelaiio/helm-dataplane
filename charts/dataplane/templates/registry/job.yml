@@ -2,12 +2,11 @@
 {{- $connectPort := 8083 }}
 {{- $svcName :=  include "dataplane.registry.fullname" . }}
 {{- $svcPort := .Values.registry.service.port -}}
-{{- $jobName := {{ $svcName }}-connector-restart }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $jobName }}
+  name: $svcName-connector-restart
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "-10"
