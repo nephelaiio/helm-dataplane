@@ -5,6 +5,8 @@ function debug {
     make kubectl get all -- -n dataplane
     make strimzi-connector-trace
     make strimzi-connector-status
+    make kubectl get pod -- -n dataplane -o name | grep connector-restart | xargs -I{} make kubectl describe pod/{} -- -n dataplane
+    make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl describe {} -- -n dataplane
     make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl logs {} -- -n dataplane
     make warehouse -- -c "'\dt'"
 }
