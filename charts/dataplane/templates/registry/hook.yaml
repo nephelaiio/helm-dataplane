@@ -7,6 +7,10 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ $svcName }}-connector-restart
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation
 spec:
   template:
     spec:
@@ -15,38 +19,32 @@ spec:
         - name: connector-restart
           securityContext:
             {{- toYaml .Values.registry.securityContext | nindent 12 }}
-          image: {{ .Values.registry.utilImage.repository }}:{{ .Values.registry.utilImage.tag }}
-          imagePullPolicy: {{ .Values.registry.utilImage.pullPolicy }}
+          image: {{ .Values.registry.hook.image.repository }}:{{ .Values.registry.hook.image.tag }}
+          imagePullPolicy: {{ .Values.registry.hook.pullPolicy }}
           resources:
-            requests:
-              cpu: 500m
-              memory: 200Mi
-            limits:
-              cpu: 500m
-              memory: 200Mi
+            {{- toYaml .Values.registry.hook.resources | nindent 12 }}
           command:
             - "sh"
             - "-c"
             - >-
               until curl -s http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
-                echo waiting for registry service;
+                echo "[$(date -Iseconds)] [INFO] [connector-restart] waiting for registry service";
                 sleep 10;
               done;
               echo registry service up;
               until curl -s http://{{ $connectSvc }}:{{ $connectPort }}/ -o /dev/null; do
-                echo waiting for connect api service;
+                echo "[$(date -Iseconds)] [INFO] [connector-restart] waiting for connect api service";
                 sleep 10;
               done;
-              echo connect api service up;
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] connect api service up";
               sleep 10;
-              echo restarting connectors;
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] restarting connectors";
               curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
                 xargs -I{} curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/restart;
-              echo connectors restarted;
-              echo restarting tasks;
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] connectors restarted";
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] restarting tasks";
               curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors | jq '.[]' -r |
                 xargs -I{} bash -c "curl -s http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks |
                    jq 'map(.id.task) | .[]' -r |
                    xargs -I[] curl -s -XPOST http://{{ $connectSvc }}:{{ $connectPort }}/connectors/{}/tasks/[]/restart"
-              echo tasks restarted;
-              tail -f /dev/null;
+              echo "[$(date -Iseconds)] [INFO] [connector-restart] tasks restarted";

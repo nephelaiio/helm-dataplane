@@ -61,8 +61,10 @@ spec:
           {{- end }}
       initContainers:
         - name: init
-          image: {{ .Values.registry.utilImage.repository }}:{{ .Values.registry.utilImage.tag }}
-          imagePullPolicy: {{ .Values.registry.utilImage.pullPolicy }}
+          image: {{ .Values.registry.init.image.repository }}:{{ .Values.registry.init.image.tag }}
+          imagePullPolicy: {{ .Values.registry.init.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.registry.init.resources | nindent 12 }}
           command:
             - sh
             - "-c"

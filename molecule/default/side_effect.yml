@@ -1,0 +1,22 @@
+---
+- name: side effect
+
+  hosts: localhost
+
+  gather_facts: false
+
+  roles:
+
+    - nephelaiio.plugins
+
+  tasks:
+
+    - name: upgrade metabase helm chart
+      kubernetes.core.helm:
+        state: present
+        name: "{{ dataplane_chart }}"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
+        release_namespace: "{{ dataplane_namespace }}"
+        kubeconfig: "{{ k8s_kubeconfig }}"
+        binary_path: "{{ k8s_helm_bin }}"
+        values: "{{ dataplane_chart_values }}"

@@ -62,6 +62,58 @@ provisioner:
           dataplane_chart: dataplane
           dataplane_path: ${MOLECULE_PROJECT_DIRECTORY}
           dataplane_metabase_hostname: "metabase.{{ k8s_cluster_name }}"
+          dataplane_chart_values:
+            registry:
+              init:
+                image:
+                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
+                  tag: latest
+              hook:
+                image:
+                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
+                  tag: latest
+            cdc:
+              postgres:
+                - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+                  port: 5432
+                  servername: pagila
+                  dbname: db
+            strimzi:
+              connect:
+                image:
+                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect"
+                  tag: latest
+                secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+              kafka:
+                storage:
+                  size: 10Gi
+                  class: standard
+                config:
+                  offsets.topic.replication.factor: 1
+                  transaction.state.log.replication.factor: 1
+                  transaction.state.log.min.isr: 1
+              zookeeper:
+                storage:
+                  size: 10Gi
+                  class: standard
+            zalando:
+              metabase:
+                instances: 1
+                loadBalancer: true
+                allowedSourceRanges: 0.0.0.0/0
+              warehouse:
+                instances: 1
+                loadBalancer: true
+                allowedSourceRanges: 0.0.0.0/0
+            metabase:
+              init:
+                enabled: false
+              ingress:
+                enabled: true
+                className: nginx-private
+                hostName: "{{ dataplane_metabase_hostname }}"
+                annotations:
+                  cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
 
 verifier:
   name: ansible
