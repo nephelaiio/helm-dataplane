@@ -35,8 +35,8 @@ WAREHOUSE_USER := strimzi
 WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
 WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-DOCKER_REGISTRY_PORT := $$(yq eval '.provisioner.inventory.hosts.all.vars.kind_registry_port' ../molecule/default/molecule.yml -r)
-DOCKER_REGISTRY ?= localhost:$(DOCKER_REGISTRY_PORT)/
+DOCKER_REGISTRY_PORT := $$(yq eval '.provisioner.inventory.hosts.all.vars.kind_registry_port' molecule/default/molecule.yml -r)
+DOCKER_REGISTRY ?= localhost:$$(yq eval '.provisioner.inventory.hosts.all.vars.kind_registry_port' ../molecule/default/molecule.yml -r)/
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 
@@ -45,7 +45,10 @@ TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane
 .PHONY: $(TARGETS)
 
 clean:
-	find /home/teddyphreak/.cache/ansible-compat/ -mindepth 2 -maxdepth 2 -type d -name "roles" | xargs -r rm -rf
+	@echo cleaning ansible cache
+	if [ -d $(HOME)/.cache/ansible-compat/ ]; then \
+		find $(HOME)/.cache/ansible-compat/ -mindepth 2 -maxdepth 2 -type d -name "roles" | xargs -r rm -rf; \
+	fi ;
 
 molecule: clean poetry
 	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $(filter-out $(TARGETS),$(MAKECMDGOALS)) -s $(SCENARIO)
@@ -73,7 +76,7 @@ warehouse:
 
 images: dataplane-connect dataplane-util
 	docker image prune --force; \
-	curl -s http://localhost:5000/v2/_catalog | jq
+	curl -s http://localhost:$(DOCKER_REGISTRY_PORT)/v2/_catalog | jq
 
 dataplane-connect:
 	cd connect ; \
