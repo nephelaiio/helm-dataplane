@@ -12,8 +12,8 @@ strimzi:
 
   kafka:
     version: "3.2.3"
-    replicas: 3
-    brokers: 4
+    replicas: 1
+    brokers: 1
     annotations: {}
     config: {}
     listener:
@@ -34,20 +34,20 @@ strimzi:
       repository: nephelaiio/dataplane-connect
       latest: 0.0.5
 
-    replicas: 3
+    replicas: 1
     config:
       group.id: connect-cluster
       offset.storage.topic: connect.cluster.offsets
       config.storage.topic: connect.cluster.configs
       status.storage.topic: connect.cluster.status
-      config.storage.replication.factor: 2
-      offset.storage.replication.factor: 2
-      status.storage.replication.factor: 2
+      config.storage.replication.factor: 1
+      offset.storage.replication.factor: 1
+      status.storage.replication.factor: 1
     annotations:
       strimzi.io/use-connector-resources: "true"
 
   zookeeper:
-    replicas: 3
+    replicas: 1
     storage:
       size: 10Gi
       class: ""
