@@ -35,7 +35,8 @@ WAREHOUSE_USER := strimzi
 WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
 WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
-DOCKER_REGISTRY ?= localhost:5000/
+DOCKER_REGISTRY_PORT := $$(yq eval '.provisioner.inventory.hosts.all.vars.kind_registry_port' molecule/default/molecule.yml -r)
+DOCKER_REGISTRY ?= localhost:$(DOCKER_REGISTRY_PORT)/
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 
