@@ -1,3 +1,4 @@
+{{- $replicas := (int .Values.strimzi.kafka.replicas) }}
 {{- $brokerCount := (int .Values.strimzi.kafka.brokers) }}
 {{- $kafkaAnnotations := .Values.strimzi.kafka.annotations }}
 {{- $externalAnnotations := .Values.strimzi.kafka.listener.external.annotations }}
@@ -19,7 +20,7 @@ metadata:
 spec:
   kafka:
     version: {{ .Values.strimzi.kafka.version }}
-    replicas: {{ .Values.strimzi.kafka.replicas }}
+    replicas: {{ $replicas }}
     listeners:
       - name: plain
         port: {{ .Values.strimzi.kafka.listener.plain.port }}
@@ -66,4 +67,6 @@ spec:
   entityOperator:
     topicOperator: {}
     userOperator: {}
+  {{- if (gt $replicas 1) }}
   cruiseControl: {}
+  {{- end }}

@@ -50,6 +50,7 @@ provisioner:
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
           kind_nodes: 1
           kind_registry_hostname: molecule-dataplane-registry
+          kind_registry_port: 49153
 
           # test vardefs
           dataplane_pagila_namespace: dataplane
@@ -66,11 +67,11 @@ provisioner:
             registry:
               init:
                 image:
-                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
+                  repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-util"
                   tag: latest
               hook:
                 image:
-                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-util"
+                  repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-util"
                   tag: latest
             cdc:
               postgres:
@@ -81,7 +82,7 @@ provisioner:
             strimzi:
               connect:
                 image:
-                  repository: "{{ kind_registry_hostname }}:5000/nephelaiio/dataplane-connect"
+                  repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-connect"
                   tag: latest
                 secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
               kafka:
