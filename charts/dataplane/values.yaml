@@ -32,7 +32,7 @@ strimzi:
 
     image:
       repository: nephelaiio/dataplane-connect
-      latest: 0.0.5
+      latest: 0.0.6
 
     replicas: 1
     config:
@@ -85,9 +85,9 @@ metabase:
     enabled: true
 
     image:
-      repository: josesolisrosales/metabase-init
+      repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: "1.1.0"
+      tag: 0.0.6
 
     retries: 6
     backoffSeconds: 2
@@ -95,7 +95,7 @@ metabase:
     user:
       firstName: John
       lastName: Doe
-      email: jdoe@test.test
+      email: xyabzc@gmail.com
 
     securityContext: {}
 
@@ -171,7 +171,7 @@ registry:
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: 0.0.5
+      tag: 0.0.6
 
     resources: {}
 
@@ -180,6 +180,6 @@ registry:
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: 0.0.5
+      tag: 0.0.6
 
     resources: {}

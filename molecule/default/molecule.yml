@@ -108,7 +108,7 @@ provisioner:
                 allowedSourceRanges: 0.0.0.0/0
             metabase:
               init:
-                enabled: false
+                enabled: true
               ingress:
                 enabled: true
                 className: nginx-private

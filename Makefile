@@ -2,7 +2,7 @@
 # nephelaiio.k8s Ansible role
 #
 # @file
-# @version 0.0.5
+# @version 0.0.6
 
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
@@ -40,9 +40,12 @@ DOCKER_REGISTRY ?= localhost:$$(yq eval '.provisioner.inventory.hosts.all.vars.k
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images wait strimzi strimzi-topics strimzi-connectors strimzi-connector-status strimzi-connector-trace strimzi-connector-restart
+TARGETS = test poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images wait strimzi strimzi-topics strimzi-connectors strimzi-connector-status strimzi-connector-trace strimzi-connector-restart
 
 .PHONY: $(TARGETS)
+
+test:
+	./bin/test
 
 clean:
 	@echo cleaning ansible cache
@@ -77,6 +80,14 @@ warehouse:
 images: dataplane-connect dataplane-util
 	docker image prune --force; \
 	curl -s http://localhost:$(DOCKER_REGISTRY_PORT)/v2/_catalog | jq
+
+dataplane-init:
+	cd init ; \
+	docker build \
+		--rm \
+		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		. ; \
+	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 dataplane-connect:
 	cd connect ; \

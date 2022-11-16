@@ -22,5 +22,5 @@ jobs:
         with:
           commit_message: "Add CI Keepalive Commit"
           committer_username: "Ted Cook"
-          committer_email: "Ted Cook@example.com"
+          committer_email: "Ted Cook@gmail.com"
           auto_push: true

@@ -1,0 +1,98 @@
+{{- $svcName := include "dataplane.metabase.fullname" . }}
+{{- $svcPort := .Values.metabase.service.port -}}
+{{- if .Values.metabase.init.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $svcName }}-setup
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: metabase-setup
+          securityContext:
+            {{- toYaml .Values.metabase.init.securityContext | nindent 12 }}
+          image: "{{ .Values.metabase.init.image.repository }}:{{ .Values.metabase.init.image.tag }}"
+          imagePullPolicy: {{ .Values.metabase.init.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.metabase.init.resources | nindent 12 }}
+
+          env:
+            - name: "INIT_RETRIES"
+              value: "{{ .Values.metabase.init.retries }}"
+            - name: "INIT_BACKOFF_SECONDS"
+              value: "{{ .Values.metabase.init.backoffSeconds }}"
+            - name: "MB_SITE_PROTO"
+              value: "https"
+            - name: "MB_SITE_URL"
+              value: "{{ .Values.metabase.ingress.hostName }}"
+            - name: "MB_ADMIN_FIRSTNAME"
+              value: "{{ .Values.metabase.init.user.firstName }}"
+            - name: "MB_ADMIN_LASTNAME"
+              value: "{{ .Values.metabase.init.user.lastName }}"
+            - name: "MB_ADMIN_EMAIL"
+              value: "{{ .Values.metabase.init.user.email }}"
+            - name: "MB_ADMIN_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dataplane.metabase.setup.secretName" . }}
+                  key: adminPassword
+
+          command:
+            - "sh"
+            - "-c"
+            - >-
+              echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
+              curl -D- -s \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null;
+              echo $?;
+              until \
+                curl -s \
+                  -H "X-Forwarded-Host: $MB_SITE_URL" \
+                  -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                  http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
+                sleep 10;
+              done;
+              echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup starting";
+              setup_token=$(curl -s -X GET \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                http://{{ $svcName }}:{{ $svcPort }}/api/session/properties | jq '.["setup-token"]' -r);
+              response_code=$(curl -s -D- -X POST \
+                -H "Content-Type: application/json" \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                -d "\
+                { \
+                  \"token\": \"$setup_token\", \
+                  \"user\": { \
+                    \"email\": \"$MB_ADMIN_EMAIL\", \
+                    \"first_name\": \"$MB_ADMIN_FIRSTNAME\", \
+                    \"last_name\": \"$MB_ADMIN_LASTNAME\", \
+                    \"password\": \"$MB_ADMIN_PASSWORD\", \
+                    \"password_confirm\": \"$MB_ADMIN_PASSWORD\", \
+                    \"site_name\": \"$MB_SITE_URL\" \
+                  }, \
+                  \"prefs\": { \
+                    \"allow_tracking\": \"false\", \
+                    \"site_locale\": \"en\", \
+                    \"site_name\": \"$MB_SITE_URL\" \
+                  } \
+                }" \
+                http://{{ $svcName }}:{{ $svcPort }}/api/setup -o /dev/null | \
+                grep ^HTTP | awk '{ print $2 }');
+              if [[ $response_code == '200' ]]; then
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup complete";
+              else
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup skipped";
+              fi
+{{- end }}
