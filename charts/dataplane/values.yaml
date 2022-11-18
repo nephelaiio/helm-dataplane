@@ -63,7 +63,6 @@ zalando:
     serviceAnnotations: {}
     allowedSourceRanges:
       - 127.0.0.1
-    user: metabase
 
   warehouse:
     name: warehouse
@@ -74,7 +73,6 @@ zalando:
     serviceAnnotations: {}
     allowedSourceRanges:
       - 127.0.0.1
-    user: strimzi
 
 metabase:
 
@@ -89,23 +87,12 @@ metabase:
       pullPolicy: IfNotPresent
       tag: 0.0.6
 
-    retries: 6
-    backoffSeconds: 2
-
     user:
       firstName: John
       lastName: Doe
       email: xyabzc@gmail.com
 
     securityContext: {}
-
-    resources:
-      requests:
-        cpu: 500m
-        memory: 200Mi
-      limits:
-        cpu: 500m
-        memory: 200Mi
 
   image:
     repository: metabase/metabase

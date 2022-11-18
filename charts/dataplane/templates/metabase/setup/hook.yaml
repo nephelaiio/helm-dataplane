@@ -24,10 +24,6 @@ spec:
             {{- toYaml .Values.metabase.init.resources | nindent 12 }}
 
           env:
-            - name: "INIT_RETRIES"
-              value: "{{ .Values.metabase.init.retries }}"
-            - name: "INIT_BACKOFF_SECONDS"
-              value: "{{ .Values.metabase.init.backoffSeconds }}"
             - name: "MB_SITE_PROTO"
               value: "https"
             - name: "MB_SITE_URL"
@@ -43,12 +39,19 @@ spec:
                 secretKeyRef:
                   name: {{ include "dataplane.metabase.setup.secretName" . }}
                   key: adminPassword
+            - name: "MB_DB_HOST"
+              value: {{ include "dataplane.warehouse.cluster" . }}
+            - name: "MB_DB_NAME"
+              value: {{ include "dataplane.warehouse.db" . }}
+            - name: "MB_DB_USERNAME"
+            - name: "MB_DB_PASSWORD"
 
           command:
             - "sh"
             - "-c"
             - >-
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
+              exit 0;
               curl -D- -s \
                 -H "X-Forwarded-Host: $MB_SITE_URL" \
                 -H "X-Forwarded-Proto: $MB_SITE_PROTO" \

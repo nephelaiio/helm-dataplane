@@ -19,6 +19,5 @@ make molecule destroy && \
     make molecule converge && \
     make wait && \
     make molecule verify && \
-    make molecule side-effect
-
-trap - EXIT
+    make molecule side-effect && \
+    trap - EXIT

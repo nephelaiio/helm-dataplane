@@ -51,12 +51,12 @@ spec:
             - name: "MB_DB_USER"
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "dataplane.metabase.secret" . }}
+                  name: {{ include "dataplane.metabase.owner.secret" . }}
                   key: username
             - name: "MB_DB_PASS"
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "dataplane.metabase.secret" . }}
+                  name: {{ include "dataplane.metabase.owner.secret" . }}
                   key: password
           {{- with .Values.metabase.podEnvironmentVars }}
             {{- toYaml . | nindent 12 }}

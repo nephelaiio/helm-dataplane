@@ -87,7 +87,7 @@
         warehouse_user: "{{ warehouse_db_secret_data.data.username | b64decode }}"
         warehouse_pass: "{{ warehouse_db_secret_data.data.password | b64decode }}"
       vars:
-        warehouse_db_secret_name: "postgres-dataplane-warehouse-db"
+        warehouse_db_secret_name: "postgres-dataplane-warehouse"
         warehouse_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', warehouse_db_secret_name) | first }}"
         secret_query: "{{
           query(
@@ -102,7 +102,7 @@
       ansible.builtin.set_fact:
         warehouse_host: "{{ warehouse_db_svc_data.status.loadBalancer.ingress[0].ip }}"
       vars:
-        warehouse_db_svc_name: "dataplane-warehouse-db"
+        warehouse_db_svc_name: "dataplane-warehouse"
         warehouse_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', warehouse_db_svc_name) | first }}"
         service_query: "{{
           query(

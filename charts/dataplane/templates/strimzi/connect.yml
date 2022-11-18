@@ -1,5 +1,5 @@
 {{- $cdcSecret := required "kafka postgres cdc secret name is required" .Values.strimzi.connect.secret }}
-{{- $dwSecret := include "dataplane.warehouse.secret" . -}}
+{{- $dwSecret := include "dataplane.warehouse.owner.secret" . -}}
 {{- $registryName := include "dataplane.registry.fullname" . -}}
 {{- $registryPort := .Values.registry.service.port -}}
 ---
