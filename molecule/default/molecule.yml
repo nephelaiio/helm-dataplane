@@ -107,8 +107,9 @@ provisioner:
                 loadBalancer: true
                 allowedSourceRanges: 0.0.0.0/0
             metabase:
-              init:
-                enabled: true
+              admin:
+                email: metabase@nephelai.io
+                password: metabase
               ingress:
                 enabled: true
                 className: nginx-private

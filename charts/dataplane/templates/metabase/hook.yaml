@@ -1,0 +1,147 @@
+{{- $svcName := include "dataplane.metabase.fullname" . }}
+{{- $svcPort := .Values.metabase.service.port -}}
+{{- if .Values.metabase.init.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $svcName }}-setup
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: metabase-setup
+          image: "{{ .Values.util.image.repository }}:{{ .Values.util.image.tag }}"
+          imagePullPolicy: {{ .Values.util.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.util.resources | nindent 12 }}
+
+          env:
+            - name: "MB_SITE_PROTO"
+              value: "https"
+            - name: "MB_DB_NAME"
+              value: "{{ .Values.metabase.db }}"
+            - name: "MB_SITE_URL"
+              value: "{{ .Values.metabase.ingress.hostName }}"
+            - name: "MB_ADMIN_FIRSTNAME"
+              value: "{{ .Values.metabase.admin.firstName }}"
+            - name: "MB_ADMIN_LASTNAME"
+              value: "{{ .Values.metabase.admin.lastName }}"
+            - name: "MB_ADMIN_EMAIL"
+              value: "{{ .Values.metabase.admin.email }}"
+            - name: "MB_ADMIN_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dataplane.metabase.admin.secret" . }}
+                  key: password
+            - name: "MB_DB_HOST"
+              value: {{ include "dataplane.warehouse.cluster" . }}
+            - name: "MB_DB_NAME"
+              value: {{ include "dataplane.warehouse.db" . }}
+            - name: "MB_DB_USERNAME"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dataplane.warehouse.reader.secret" . }}
+                  key: username
+            - name: "MB_DB_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dataplane.warehouse.reader.secret" . }}
+                  key: password
+
+          command:
+            - "sh"
+            - "-c"
+            - >-
+              echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
+              until \
+                curl -s \
+                  -H "X-Forwarded-Host: $MB_SITE_URL" \
+                  -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                  http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
+                sleep 10;
+              done;
+              echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup start";
+              setup_token=$(curl -s -X GET \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                http://{{ $svcName }}:{{ $svcPort }}/api/session/properties | jq '.["setup-token"]' -r);
+              response_code=$(curl -s -D- -X POST \
+                -H "Content-Type: application/json" \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                -d "\
+                { \
+                  \"token\": \"$setup_token\", \
+                  \"database\": {
+                    \"engine\": \"postgres\", \
+                    \"is_full_sync\": true, \
+                    \"name\": \"$MB_DB_NAME\", \
+                    \"details\": { \
+                      \"advanced-options\": false, \
+                      \"dbname\": \"$MB_DB_NAME\", \
+                      \"host\": \"$MB_DB_HOST\", \
+                      \"user\": \"$MB_DB_USERNAME\", \
+                      \"password\": \"$MB_DB_PASSWORD\", \
+                      \"port\": 5432, \
+                      \"schema-filters-type\": \"all\", \
+                      \"ssl\": false, \
+                      \"tunnel-enabled\": false \
+                    } \
+                  }, \
+                  \"user\": { \
+                    \"email\": \"$MB_ADMIN_EMAIL\", \
+                    \"first_name\": \"$MB_ADMIN_FIRSTNAME\", \
+                    \"last_name\": \"$MB_ADMIN_LASTNAME\", \
+                    \"password\": \"$MB_ADMIN_PASSWORD\", \
+                    \"password_confirm\": \"$MB_ADMIN_PASSWORD\", \
+                    \"site_name\": \"$MB_SITE_URL\" \
+                  }, \
+                  \"prefs\": { \
+                    \"allow_tracking\": \"false\", \
+                    \"site_locale\": \"en\", \
+                    \"site_name\": \"$MB_SITE_URL\" \
+                  } \
+                }" \
+                http://{{ $svcName }}:{{ $svcPort }}/api/setup | grep ^HTTP | awk '{print $2}');
+              if [[ $response_code == '200' ]]; then
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup complete (reponse_code=$response_code)";
+              else
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup skipped (reponse_code=$response_code)";
+              fi;
+              echo "[$(date -Iseconds)] [INFO] [metabase-setup] log in to metabase";
+              token=$(curl -s -X POST \
+                -H "Content-Type: application/json" \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                -d "\
+                { \
+                  \"username\": \"$MB_ADMIN_EMAIL\", \
+                  \"password\": \"$MB_ADMIN_PASSWORD\" \
+                }" \
+                http://{{ $svcName }}:{{ $svcPort }}/api/session | jq '.id' -r);
+              echo "[$(date -Iseconds)] [INFO] [metabase-setup] query sample metabase db";
+              db_sample=$(curl -s -X GET \
+                -H "Accept: application/json" \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                -H "X-Metabase-Session: $token" \
+                http://{{ $svcName }}:{{ $svcPort }}/api/database | jq ".data | map(select(.name == \"Sample Database\")) | .[0].id" -r);
+              if [[ "$db_sample" != "null" ]]; then
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] delete sample metabase db";
+                echo "$db_sample" | xargs -I{} \
+                  curl -s -X DELETE \
+                  -H "X-Forwarded-Host: $MB_SITE_URL" \
+                  -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                  -H "X-Metabase-Session: $token" \
+                  http://{{ $svcName }}:{{ $svcPort }}/api/database/$db_sample;
+              else
+                echo "[$(date -Iseconds)] [INFO] [metabase-setup] no sample db present";
+              fi
+{{- end }}

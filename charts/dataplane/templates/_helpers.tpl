@@ -242,24 +242,24 @@ TLS secret name
 {{/*
 Metabase setup secret name
 */}}
-{{- define "dataplane.metabase.setup.secretName" -}}
-{{- (printf "%s-%s" (include "dataplane.release" .) "metabase-api-token") -}}
+{{- define "dataplane.metabase.admin.secret" -}}
+{{- (printf "%s-%s" (include "dataplane.release" .) "metabase-admin") -}}
 {{- end }}
 
 {{/*
 Metabase setup secret data
 */}}
-{{- define "dataplane.metabase.setup.secretData" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.metabase.setup.secretName" .) -}}
+{{- define "dataplane.metabase.admin.secretData" -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.metabase.admin.secret" .) -}}
 {{- if $secret -}}
 {{/*
    Reuse existing secret data
 */}}
-adminPassword: {{ $secret.data.adminPassword }}
+password: {{ $secret.data.password }}
 {{- else -}}
 {{/*
     Generate new secret
 */}}
-adminPassword: {{ randAlphaNum 16 | b64enc }}
+password: {{ randAlphaNum 16 | b64enc }}
 {{- end -}}
 {{- end -}}

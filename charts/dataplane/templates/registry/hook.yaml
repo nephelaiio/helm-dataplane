@@ -19,10 +19,10 @@ spec:
         - name: connector-restart
           securityContext:
             {{- toYaml .Values.registry.securityContext | nindent 12 }}
-          image: {{ .Values.registry.hook.image.repository }}:{{ .Values.registry.hook.image.tag }}
+          image: {{ .Values.util.image.repository }}:{{ .Values.util.image.tag }}
           imagePullPolicy: {{ .Values.registry.hook.pullPolicy }}
           resources:
-            {{- toYaml .Values.registry.hook.resources | nindent 12 }}
+            {{- toYaml .Values.util.resources | nindent 12 }}
           command:
             - "sh"
             - "-c"
