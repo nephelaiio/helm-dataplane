@@ -20,7 +20,7 @@ spec:
           securityContext:
             {{- toYaml .Values.registry.securityContext | nindent 12 }}
           image: {{ .Values.util.image.repository }}:{{ .Values.util.image.tag }}
-          imagePullPolicy: {{ .Values.registry.hook.pullPolicy }}
+          imagePullPolicy: {{ .Values.util.image.pullPolicy }}
           resources:
             {{- toYaml .Values.util.resources | nindent 12 }}
           command:
