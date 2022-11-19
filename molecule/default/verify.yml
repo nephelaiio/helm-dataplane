@@ -196,6 +196,9 @@
             )
           }}"
 
+      - name: debug metabase connection data
+        msg: "host={{ metabase_host }}, hostname={{ dataplane_metabase_hostname }}, user={{ metabse_user }}, password={{ metabase_pass }}"
+
       - name: log in to metabase
         ansible.builtin.uri:
           url: "https://{{ metabase_host }}/api/session"
@@ -239,7 +242,3 @@
         vars:
           metabase_dbs: "{{ metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') }}"
         when: metabase_dbs | length < 1
-
-      - name: print metabase access credentials
-        ansible.builtin.debug:
-          msg: "username={{ metabase_user }}, metabase_pass={{ metabase_pass }}"
