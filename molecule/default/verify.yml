@@ -197,7 +197,7 @@
           }}"
 
       - name: debug metabase connection data
-        ansible.buitin.debug:
+        ansible.builtin.debug:
           msg: "host={{ metabase_host }}, hostname={{ dataplane_metabase_hostname }}, user={{ metabse_user }}, password={{ metabase_pass }}"
 
       - name: log in to metabase
