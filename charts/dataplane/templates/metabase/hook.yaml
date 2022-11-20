@@ -24,7 +24,7 @@ spec:
           env:
             - name: "MB_SITE_PROTO"
               value: "https"
-            - name: "MB_DB_NAME"
+            - name: "MB_DB_ID"
               value: "{{ .Values.metabase.db }}"
             - name: "MB_SITE_URL"
               value: "{{ .Values.metabase.ingress.hostName }}"
@@ -82,7 +82,7 @@ spec:
                   \"database\": {
                     \"engine\": \"postgres\", \
                     \"is_full_sync\": true, \
-                    \"name\": \"$MB_DB_NAME\", \
+                    \"name\": \"$MB_DB_ID\", \
                     \"details\": { \
                       \"advanced-options\": false, \
                       \"dbname\": \"$MB_DB_NAME\", \
