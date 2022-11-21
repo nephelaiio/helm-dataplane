@@ -58,6 +58,7 @@ spec:
             - "sh"
             - "-c"
             - >-
+              set -e
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
               until \
                 curl -s \
@@ -67,50 +68,65 @@ spec:
                 echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
                 sleep 10;
               done;
+              echo "[$(date -Iseconds)] [INFO] [metabase-setup] retrieve metabase setup token";
+              until [[ ${setup_token:-""} != "" ]]; do
+                setup_token=$(curl -s -X GET \
+                  -H "X-Forwarded-Host: $MB_SITE_URL" \
+                  -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                  http://{{ $svcName }}:{{ $svcPort }}/api/session/properties | jq '.["setup-token"]' -r);
+              done;
+              retries=10;
+              response_code="";
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup start";
-              setup_token=$(curl -s -X GET \
-                -H "X-Forwarded-Host: $MB_SITE_URL" \
-                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
-                http://{{ $svcName }}:{{ $svcPort }}/api/session/properties | jq '.["setup-token"]' -r);
-              response_code=$(curl -s -D- -X POST \
-                -H "Content-Type: application/json" \
-                -H "X-Forwarded-Host: $MB_SITE_URL" \
-                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
-                -d "\
-                { \
-                  \"token\": \"$setup_token\", \
-                  \"database\": {
-                    \"engine\": \"postgres\", \
-                    \"is_full_sync\": true, \
-                    \"name\": \"$MB_DB_ID\", \
-                    \"details\": { \
-                      \"advanced-options\": false, \
-                      \"dbname\": \"$MB_DB_NAME\", \
-                      \"host\": \"$MB_DB_HOST\", \
-                      \"user\": \"$MB_DB_USERNAME\", \
-                      \"password\": \"$MB_DB_PASSWORD\", \
-                      \"port\": 5432, \
-                      \"schema-filters-type\": \"all\", \
-                      \"ssl\": false, \
-                      \"tunnel-enabled\": false \
+              response_header=$(mktemp);
+              until [[ "$response_code" == "200" || "$response_code" == "403" || "$retries" == "0" ]]; do
+                response_body=$(curl -s -D $response_header -X POST \
+                  -H "Content-Type: application/json" \
+                  -H "X-Forwarded-Host: $MB_SITE_URL" \
+                  -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                  -d "\
+                  { \
+                    \"token\": \"$setup_token\", \
+                    \"database\": {
+                      \"engine\": \"postgres\", \
+                      \"is_full_sync\": true, \
+                      \"name\": \"$MB_DB_ID\", \
+                      \"details\": { \
+                        \"advanced-options\": false, \
+                        \"dbname\": \"$MB_DB_NAME\", \
+                        \"host\": \"$MB_DB_HOST\", \
+                        \"user\": \"$MB_DB_USERNAME\", \
+                        \"password\": \"$MB_DB_PASSWORD\", \
+                        \"port\": 5432, \
+                        \"schema-filters-type\": \"all\", \
+                        \"ssl\": false, \
+                        \"tunnel-enabled\": false \
+                      } \
+                    }, \
+                    \"user\": { \
+                      \"email\": \"$MB_ADMIN_EMAIL\", \
+                      \"first_name\": \"$MB_ADMIN_FIRSTNAME\", \
+                      \"last_name\": \"$MB_ADMIN_LASTNAME\", \
+                      \"password\": \"$MB_ADMIN_PASSWORD\", \
+                      \"password_confirm\": \"$MB_ADMIN_PASSWORD\", \
+                      \"site_name\": \"$MB_SITE_URL\" \
+                    }, \
+                    \"prefs\": { \
+                      \"allow_tracking\": \"false\", \
+                      \"site_locale\": \"en\", \
+                      \"site_name\": \"$MB_SITE_URL\" \
                     } \
-                  }, \
-                  \"user\": { \
-                    \"email\": \"$MB_ADMIN_EMAIL\", \
-                    \"first_name\": \"$MB_ADMIN_FIRSTNAME\", \
-                    \"last_name\": \"$MB_ADMIN_LASTNAME\", \
-                    \"password\": \"$MB_ADMIN_PASSWORD\", \
-                    \"password_confirm\": \"$MB_ADMIN_PASSWORD\", \
-                    \"site_name\": \"$MB_SITE_URL\" \
-                  }, \
-                  \"prefs\": { \
-                    \"allow_tracking\": \"false\", \
-                    \"site_locale\": \"en\", \
-                    \"site_name\": \"$MB_SITE_URL\" \
-                  } \
-                }" \
-                http://{{ $svcName }}:{{ $svcPort }}/api/setup | grep ^HTTP | awk '{print $2}');
-              if [[ $response_code == '200' ]]; then
+                  }" \
+                  http://{{ $svcName }}:{{ $svcPort }}/api/setup);
+                  response_code=$(cat $response_header | grep ^HTTP | awk '{print $2}');
+                  retries=$(($retries - 1));
+                  if [[ "$response_code" != "200" && "$response_code" != "403" ]]; then
+                    echo "$response_body (response_code=$response_code)";
+                    sleep 30;
+                  fi;
+              done;
+              rm -f $response_header;
+              if [[ "$response_code" == "200" ]]; then
                 echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup complete (reponse_code=$response_code)";
               else
                 echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup skipped (reponse_code=$response_code)";
