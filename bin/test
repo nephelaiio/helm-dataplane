@@ -21,4 +21,5 @@ make molecule destroy && \
     make wait && \
     make molecule verify && \
     make molecule side-effect && \
+    make molecule verify && \
     trap - EXIT
