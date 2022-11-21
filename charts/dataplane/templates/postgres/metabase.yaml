@@ -21,8 +21,8 @@ spec:
     admin:
       - superuser
       - createdb
-    {{ .Values.zalando.metabase.user }}: []
+    {{ include "dataplane.metabase.owner.name" . }}: []
   databases:
-    metabase: {{ .Values.zalando.metabase.user }}
+    metabase: {{ include "dataplane.metabase.owner.name" . }}
   postgresql:
     version: "{{ .Values.zalando.metabase.version }}"

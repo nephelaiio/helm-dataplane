@@ -3,6 +3,14 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+util:
+
+  image:
+    repository: nephelaiio/dataplane-util
+    pullPolicy: IfNotPresent
+    tag: 0.0.6
+  resources: {}
+
 cdc:
 
     postgres: []
@@ -29,11 +37,9 @@ strimzi:
       class: ""
 
   connect:
-
     image:
       repository: nephelaiio/dataplane-connect
-      latest: 0.0.5
-
+      latest: 0.0.6
     replicas: 1
     config:
       group.id: connect-cluster
@@ -63,7 +69,6 @@ zalando:
     serviceAnnotations: {}
     allowedSourceRanges:
       - 127.0.0.1
-    user: metabase
 
   warehouse:
     name: warehouse
@@ -74,46 +79,33 @@ zalando:
     serviceAnnotations: {}
     allowedSourceRanges:
       - 127.0.0.1
-    user: strimzi
 
 metabase:
 
+  db: dataplane
+
   replicaCount: 2
 
+  admin:
+    firstName: Metabase
+    lastName: Admin
+    email: metabase@nephelai.io
+
   init:
-
     enabled: true
-
     image:
-      repository: josesolisrosales/metabase-init
+      repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: "1.1.0"
-
-    retries: 6
-    backoffSeconds: 2
-
-    user:
-      firstName: John
-      lastName: Doe
-      email: jdoe@test.test
-
+      tag: 0.0.6
     securityContext: {}
-
-    resources:
-      requests:
-        cpu: 500m
-        memory: 200Mi
-      limits:
-        cpu: 500m
-        memory: 200Mi
 
   image:
     repository: metabase/metabase
     pullPolicy: IfNotPresent
-    tag: "v0.44.2"
+    tag: "v0.44.6"
 
   ingress:
-    enabled: false
+    enabled: true
     annotations: {}
     hostName: ""
     className: ""
@@ -153,33 +145,9 @@ registry:
       value: "true"
 
   securityContext: {}
-
   podSecurityContext: {}
-
   podAnnotations: {}
-
   resources: {}
-
   nodeSelector: {}
-
   tolerations: []
-
   affinity: {}
-
-  init:
-
-    image:
-      repository: nephelaiio/dataplane-util
-      pullPolicy: IfNotPresent
-      tag: 0.0.5
-
-    resources: {}
-
-  hook:
-
-    image:
-      repository: nephelaiio/dataplane-util
-      pullPolicy: IfNotPresent
-      tag: 0.0.5
-
-    resources: {}

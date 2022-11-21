@@ -2,7 +2,7 @@
 # nephelaiio.k8s Ansible role
 #
 # @file
-# @version 0.0.5
+# @version 0.0.6
 
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
@@ -31,18 +31,21 @@ METABASE_HOST := $$(make --no-print-directory kubectl get service -- -n $(DATAPL
 WAREHOUSE_DB := warehouse
 WAREHOUSE_NS := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_namespace' molecule/default/molecule.yml -r)
 WAREHOUSE_TEAM := $$(yq eval '.provisioner.inventory.hosts.all.vars.dataplane_chart' molecule/default/molecule.yml -r)
-WAREHOUSE_USER := strimzi
-WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret $(WAREHOUSE_USER)-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
-WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)-db\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
+WAREHOUSE_USER := warehouse_reader_user
+WAREHOUSE_PASS := $$(make --no-print-directory kubectl get secret warehouse-reader-user-$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB) -- -n $(WAREHOUSE_NS) -o json | jq '.data.password' -r | base64 -d )
+WAREHOUSE_HOST := $$(make --no-print-directory kubectl get service -- -n $(WAREHOUSE_NS) -o json | jq ".items | map(select(.metadata.name == \"$(WAREHOUSE_TEAM)-$(WAREHOUSE_DB)\"))[0] | .status.loadBalancer.ingress[0].ip" -r)
 
 DOCKER_REGISTRY_PORT := $$(yq eval '.provisioner.inventory.hosts.all.vars.kind_registry_port' molecule/default/molecule.yml -r)
 DOCKER_REGISTRY ?= localhost:$$(yq eval '.provisioner.inventory.hosts.all.vars.kind_registry_port' ../molecule/default/molecule.yml -r)/
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 
-TARGETS = poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images wait strimzi strimzi-topics strimzi-connectors strimzi-connector-status strimzi-connector-trace strimzi-connector-restart
+TARGETS = test poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images wait strimzi strimzi-topics strimzi-connectors strimzi-connector-status strimzi-connector-trace strimzi-connector-restart
 
 .PHONY: $(TARGETS)
+
+test:
+	./bin/test
 
 clean:
 	@echo cleaning ansible cache
@@ -77,6 +80,14 @@ warehouse:
 images: dataplane-connect dataplane-util
 	docker image prune --force; \
 	curl -s http://localhost:$(DOCKER_REGISTRY_PORT)/v2/_catalog | jq
+
+dataplane-init:
+	cd init ; \
+	docker build \
+		--rm \
+		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
+		. ; \
+	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 dataplane-connect:
 	cd connect ; \

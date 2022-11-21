@@ -9,6 +9,7 @@ function debug {
     make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl describe {} -- -n dataplane
     make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl logs {} -- -n dataplane
     make warehouse -- -c "'\dt'"
+    make kubectl get pod -- -A | grep -i metabase-app-setup | awk '{ print $2 }' | xargs -I{} make kubectl logs pod/{} -- -n dataplane
 }
 
 trap debug EXIT
@@ -19,4 +20,5 @@ make molecule destroy && \
     make molecule converge && \
     make wait && \
     make molecule verify && \
-    make molecule side-effect
+    make molecule side-effect && \
+    trap - EXIT

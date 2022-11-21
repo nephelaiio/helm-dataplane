@@ -169,7 +169,7 @@ DB team name
 Metabase cluster name
 */}}
 {{- define "dataplane.metabase.cluster" -}}
-{{- (printf "%s-%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.metabase.db" .) "db") -}}
+{{- (printf "%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.zalando.metabase.db" .)) -}}
 {{- end }}
 
 {{/*
@@ -180,17 +180,24 @@ Metabase DB name
 {{- end }}
 
 {{/*
-Metabase DB user secret
+Metabase DB user name
  */}}
-{{- define "dataplane.metabase.secret" -}}
-{{ .Values.zalando.metabase.user }}-{{- include "dataplane.metabase.cluster" . -}}
+{{- define "dataplane.metabase.owner.name" -}}
+{{ .Values.zalando.metabase.name }}
+{{- end }}
+
+{{/*
+Metabase DB owner secret
+ */}}
+{{- define "dataplane.metabase.owner.secret" -}}
+{{ include "dataplane.metabase.owner.name" . }}-{{- include "dataplane.metabase.cluster" . -}}
 {{- end }}
 
 {{/*
 Warehouse cluster name
 */}}
 {{- define "dataplane.warehouse.cluster" -}}
-{{- (printf "%s-%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.warehouse.db" .) "db") -}}
+{{- (printf "%s-%s" (include "dataplane.zalando.team" .) (include "dataplane.warehouse.db" .)) -}}
 {{- end }}
 
 {{/*
@@ -201,10 +208,24 @@ Warehouse DB name
 {{- end }}
 
 {{/*
-Warehouse DB user secret
+Warehouse DB owner name
  */}}
-{{- define "dataplane.warehouse.secret" -}}
-{{ .Values.zalando.warehouse.user }}-{{- include "dataplane.warehouse.cluster" . -}}
+{{- define "dataplane.warehouse.owner.name" -}}
+{{ .Values.zalando.warehouse.name }}_owner
+{{- end }}
+
+{{/*
+Warehouse DB owner secret
+ */}}
+{{- define "dataplane.warehouse.owner.secret" -}}
+{{ .Values.zalando.warehouse.name }}-owner-user-{{- include "dataplane.warehouse.cluster" . -}}
+{{- end }}
+
+{{/*
+Warehouse DB reader secret
+ */}}
+{{- define "dataplane.warehouse.reader.secret" -}}
+{{ .Values.zalando.warehouse.name }}-reader-user-{{- include "dataplane.warehouse.cluster" . -}}
 {{- end }}
 
 {{/*
@@ -221,24 +242,24 @@ TLS secret name
 {{/*
 Metabase setup secret name
 */}}
-{{- define "dataplane.metabase.setup.secretName" -}}
-{{- (printf "%s-%s" (include "dataplane.release" .) "metabase-api-token") -}}
+{{- define "dataplane.metabase.admin.secret" -}}
+{{- (printf "%s-%s" (include "dataplane.release" .) "metabase-admin") -}}
 {{- end }}
 
 {{/*
 Metabase setup secret data
 */}}
-{{- define "dataplane.metabase.setup.secretData" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.metabase.setup.secretName" .) -}}
+{{- define "dataplane.metabase.admin.secretData" -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (include "dataplane.metabase.admin.secret" .) -}}
 {{- if $secret -}}
 {{/*
    Reuse existing secret data
 */}}
-adminPassword: {{ $secret.data.adminPassword }}
+password: {{ $secret.data.password }}
 {{- else -}}
 {{/*
     Generate new secret
 */}}
-adminPassword: {{ randAlphaNum 16 | b64enc }}
+password: {{ randAlphaNum 16 | b64enc }}
 {{- end -}}
 {{- end -}}
