@@ -12,12 +12,12 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 
 ## TODO
 In order of priority
-* Add table exclude support for cdc connectors
+* Add support for mysql sources
+* Test table add/delete operations
 * Add config options for warehouse backups
-* Add Kafdrop monitoring with OAuth2 reverse proxy
-* Test table add operation
-* Test table delete operation
+* Add monitoring for Kafka topics
 * Add Apache Flink deployment
+* Add table exclude support for cdc connectors
 
 ## Dependencies
 Chart depends on the following cluster levels components being deployed in the target cluster
