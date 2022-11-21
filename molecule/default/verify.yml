@@ -231,14 +231,14 @@
           validate_certs: false
         register: metabase_db_query
 
-      - name: ensure sample db deletion
+      - name: verify sample db deletion
         ansible.builtin.fail:
           msg: "Sample databases have not been removed from Metabase"
         vars:
           extra_dbs: "{{ metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') }}"
         when: extra_dbs | length > 0
 
-      - name: record metabase db data
+      - name: verify metabase db creation
         ansible.builtin.fail:
           msg: "Database 'dataplane' has not been registered to Metabase"
         vars:
