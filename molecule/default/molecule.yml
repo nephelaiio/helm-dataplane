@@ -57,6 +57,9 @@ provisioner:
           dataplane_pagila_team: pagila
           dataplane_pagila_user: metabase
           dataplane_pagila_db: db
+          dataplane_pagila_signaling: false
+          dataplane_pagila_signal_schema: debezium
+          dataplane_pagila_signal_table: signaling
 
           # dataplane vardefs
           dataplane_namespace: dataplane
@@ -79,6 +82,7 @@ provisioner:
                   port: 5432
                   servername: pagila
                   dbname: db
+                  signaling: "{{ dataplane_pagila_signaling }}"
             strimzi:
               connect:
                 image:
