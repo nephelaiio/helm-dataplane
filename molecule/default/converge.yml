@@ -138,10 +138,10 @@
         - (cluster_status | length) != (cluster_query | length)
         - cluster_failed | length > 0
 
-    - name: query connection data
+    - name: query pagila connection data
       ansible.builtin.set_fact:
-        pagila_src_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
-        pagila_src_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
+        pagila_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
+        pagila_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
       vars:
         pagila_db_secret_name: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
         pagila_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', pagila_db_secret_name) | first }}"
@@ -154,9 +154,9 @@
           )
         }}"
 
-    - name: query service data
+    - name: query pagila service data
       ansible.builtin.set_fact:
-        pagila_src_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
+        pagila_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
       vars:
         pagila_db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
         pagila_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', pagila_db_svc_name) | first }}"
@@ -171,16 +171,16 @@
 
     - name: wait for database port open
       ansible.builtin.wait_for:
-        host: "{{ pagila_src_host }}"
+        host: "{{ pagila_host }}"
         port: 5432
 
     - name: create database
       community.postgresql.postgresql_db:
         name: "{{ dataplane_pagila_db }}"
         state: present
-        login_user: "{{ pagila_src_user }}"
-        login_password: "{{ pagila_src_pass }}"
-        login_host: "{{ pagila_src_host }}"
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
 
     - name: create data tempdir
       ansible.builtin.tempfile:
@@ -210,9 +210,9 @@
           community.postgresql.postgresql_db:
             name: "{{ dataplane_pagila_db }}"
             state: restore
-            login_user: "{{ pagila_src_user }}"
-            login_password: "{{ pagila_src_pass }}"
-            login_host: "{{ pagila_src_host }}"
+            login_user: "{{ pagila_user }}"
+            login_password: "{{ pagila_pass }}"
+            login_host: "{{ pagila_host }}"
             target: "{{ datadir.path }}/pagila.sql"
           changed_when: false
 

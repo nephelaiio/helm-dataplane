@@ -3,7 +3,11 @@
 
   hosts: localhost
 
-  gather_facts: false
+  gather_facts: true
+
+  vars:
+
+    extra_table: languages
 
   roles:
 
@@ -11,20 +15,10 @@
 
   tasks:
 
-    - name: upgrade metabase helm chart
-      kubernetes.core.helm:
-        state: present
-        name: "{{ dataplane_chart }}"
-        chart_ref: "{{ dataplane_path }}/charts/dataplane"
-        release_namespace: "{{ dataplane_namespace }}"
-        kubeconfig: "{{ k8s_kubeconfig }}"
-        binary_path: "{{ k8s_helm_bin }}"
-        values: "{{ dataplane_chart_values }}"
-
-    - name: query connection data
+    - name: query pagila connection data
       ansible.builtin.set_fact:
-        pagila_src_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
-        pagila_src_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
+        pagila_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
+        pagila_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
       vars:
         pagila_db_secret_name: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
         pagila_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', pagila_db_secret_name) | first }}"
@@ -37,11 +31,99 @@
           )
         }}"
 
-    - name: create pagila table
-      community.postgresql.postgresql_db:
-        name: "{{ dataplane_pagila_db }}"
-        login_user: "{{ pagila_src_user }}"
-        login_password: "{{ pagila_src_pass }}"
-        login_host: "{{ pagila_src_host }}"
-        target: "{{ datadir.path }}/pagila.sql"
-      changed_when: false
+    - name: query pagila service data
+      ansible.builtin.set_fact:
+        pagila_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
+      vars:
+        pagila_db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+        pagila_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', pagila_db_svc_name) | first }}"
+        service_query: "{{
+          query(
+            'kubernetes.core.k8s',
+            namespace=dataplane_pagila_namespace,
+            kind='Service',
+            kubeconfig=k8s_kubeconfig
+          )
+        }}"
+
+    - name: create pagila debezium signal schema
+      community.postgresql.postgresql_schema:
+        db: "{{ dataplane_pagila_db }}"
+        name: "{{ dataplane_pagila_signal_schema }}"
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
+
+    - name: query pagila public tables
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
+      register: pagila_table_query
+
+    - name: query pagila debezium tables
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "SELECT table_name FROM information_schema.tables WHERE table_schema='{{ dataplane_pagila_signal_schema }}' AND table_type='BASE TABLE'"
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
+      register: pagila_debezium_query
+
+    - name: record pagila table data
+      ansible.builtin.set_fact:
+        pagila_data_tables: "{{ pagila_table_query.query_result | map(attribute='table_name') | difference(['payment']) | list }}"
+        pagila_signal_tables: "{{ pagila_debezium_query.query_result | map(attribute='table_name') | list }}"
+
+    - name: create pagila data table
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "CREATE TABLE {{ extra_table }} AS TABLE language"
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
+      when: extra_table not in pagila_data_tables
+
+    - name: create pagila debezium signal table
+      community.postgresql.postgresql_table:
+        db: "{{ dataplane_pagila_db }}"
+        name: "{{ dataplane_pagila_signal_schema }}.{{ dataplane_pagila_signal_table }}"
+        columns:
+          - id varchar(100) primary key
+          - type varchar(100) not null
+          - data varchar(100) null
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
+      when: dataplane_pagila_signal_table not in pagila_signal_tables
+
+    - name: upgrade metabase helm chart
+      kubernetes.core.helm:
+        state: present
+        name: "{{ dataplane_chart }}"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
+        release_namespace: "{{ dataplane_namespace }}"
+        kubeconfig: "{{ k8s_kubeconfig }}"
+        binary_path: "{{ k8s_helm_bin }}"
+        values: "{{ dataplane_chart_values }}"
+      vars:
+        dataplane_pagila_signaling: true
+
+    - name: signal table snapshot
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: >-
+          INSERT INTO {{ dataplane_pagila_signal_schema }}.{{ dataplane_pagila_signal_table }}(id, type, data)
+          VALUES('{{ signal_uuid }}', 'execute-snapshot', '{"data-collections": ["public.{{ extra_table }}"]}')
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
+      vars:
+        signal_id: "{{ dataplane_pagila_db  }}_{{ ansible_date_time }}"
+        signal_uuid: "{{ signal_id | to_uuid }}"
+
+    - name: restart kafka connect deployment
+      ansible.builtin.command: >-
+        kubectl rollout restart deployment {{ dataplane_chart }}-connect --kubeconfig "{{ k8s_kubeconfig }}" -n {{ dataplane_namespace }}

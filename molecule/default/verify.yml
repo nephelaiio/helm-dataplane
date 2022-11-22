@@ -25,7 +25,7 @@
     - when: lookup('ansible.builtin.env', 'CDC_VERIFY', default='true') | bool
       block:
 
-        - name: query source connection data
+        - name: query pagila connection data
           ansible.builtin.set_fact:
             pagila_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
             pagila_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
@@ -41,7 +41,7 @@
               )
             }}"
 
-        - name: query source service data
+        - name: query pagila service data
           ansible.builtin.set_fact:
             pagila_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
           vars:
@@ -56,32 +56,34 @@
               )
             }}"
 
-        - name: query source tables
+        - name: query pagila tables
           community.postgresql.postgresql_query:
-            db: db
-            query: "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
+            db: "{{ dataplane_pagila_db }}"
+            query: >-
+              SELECT table_name FROM information_schema.tables
+                WHERE table_schema='public' AND table_type='BASE TABLE'
             login_user: "{{ pagila_user }}"
             login_password: "{{ pagila_pass }}"
             login_host: "{{ pagila_host }}"
-          register: source_table_query
+          register: pagila_table_query
 
         - name: record source table data
           ansible.builtin.set_fact:
-            source_tables: "{{ source_table_query.query_result | map(attribute='table_name') | difference(['payment']) | list }}"
+            pagila_tables: "{{ pagila_table_query.query_result | map(attribute='table_name') | difference(['payment']) | list }}"
 
-        - name: query source table data
+        - name: query pagila table data
           community.postgresql.postgresql_query:
-            db: db
+            db: "{{ dataplane_pagila_db }}"
             query: "SELECT count(*) from {{ item }}"
             login_user: "{{ pagila_user }}"
             login_password: "{{ pagila_pass }}"
             login_host: "{{ pagila_host }}"
-          loop: "{{ source_tables }}"
-          register: source_data_query
+          loop: "{{ pagila_tables }}"
+          register: pagila_data_query
 
-        - name: record source table data
+        - name: record pagila table data
           ansible.builtin.set_fact:
-            source_data: "{{ source_data_query.results | list_to_dict('item') }}"
+            pagila_data: "{{ pagila_data_query.results | list_to_dict('item') }}"
 
         - name: query warehouse connection data
           ansible.builtin.set_fact:
@@ -99,7 +101,7 @@
               )
             }}"
 
-        - name: query source service data
+        - name: query warehouse service data
           ansible.builtin.set_fact:
             warehouse_host: "{{ warehouse_db_svc_data.status.loadBalancer.ingress[0].ip }}"
           vars:
@@ -114,20 +116,35 @@
               )
             }}"
 
-        - name: verify warehouse tables
-          community.postgresql.postgresql_query:
-            db: warehouse
-            query: "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
-            login_user: "{{ warehouse_user }}"
-            login_password: "{{ warehouse_pass }}"
-            login_host: "{{ warehouse_host }}"
-          vars:
-            warehouse_tables_expected: "{{ source_tables | map('map_format', 'pagila_%s') | list }}"
-            warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
-          register: warehouse_table_query
-          retries: 20
-          delay: 30
-          until: warehouse_tables_expected | difference(warehouse_tables_found) | length == 0
+        - block:
+
+            - name: verify warehouse tables
+              community.postgresql.postgresql_query:
+                db: warehouse
+                query: "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
+                login_user: "{{ warehouse_user }}"
+                login_password: "{{ warehouse_pass }}"
+                login_host: "{{ warehouse_host }}"
+              vars:
+                warehouse_tables_expected: "{{ pagila_tables | map('map_format', 'pagila_%s') | list }}"
+                warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
+              register: warehouse_table_query
+              retries: 1
+              delay: 2
+              until: warehouse_tables_expected | difference(warehouse_tables_found) | length == 0
+
+          rescue:
+
+            - name: debug table mismatches
+              ansible.builtin.debug:
+                msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
+              vars:
+                warehouse_tables_expected: "{{ pagila_tables | map('map_format', 'pagila_%s') | list }}"
+                warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
+                warehouse_tables_diff: "{{ warehouse_tables_expected | difference(warehouse_tables_found) }}"
+
+            - name: fail verification
+              ansible.builtin.fail:
 
         - name: wait for cdc to complete
           pause:
@@ -156,10 +173,10 @@
             warehouse_table_records: "{{ (warehouse_data[warehouse_table].query_result | list)[0].count }}"
             warehouse_table: "pagila_{{ item }}"
             source_table: "{{ item }}"
-            source_table_records: "{{ (source_data[source_table].query_result | list)[0].count }}"
+            source_table_records: "{{ (pagila_data[source_table].query_result | list)[0].count }}"
           loop_control:
             label: "{{ source_table }}"
-          loop: "{{ (source_data.keys() | list) }}"
+          loop: "{{ (pagila_data.keys() | list) }}"
           when: source_table_records > warehouse_table_records
 
     - when: lookup('ansible.builtin.env', 'METABASE_VERIFY', default='true') | bool

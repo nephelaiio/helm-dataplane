@@ -13,7 +13,6 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 
 ## TODO
 In order of priority
-* Test table add/delete operations
 * Add support for MySQL sources
 * Add config options for warehouse backups
 * Add monitoring for Kafka topics
