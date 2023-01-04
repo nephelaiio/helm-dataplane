@@ -236,28 +236,39 @@
         ansible.builtin.set_fact:
           metabase_session: "{{ metabase_login_query.json.id }}"
 
-      - name: query metabase dbs
-        ansible.builtin.uri:
-          url: "https://{{ metabase_host }}/api/database/?include=tables"
-          method: GET
-          headers:
-            Host: "{{ dataplane_metabase_hostname }}"
-            Content-Type: application/json
-            X-Metabase-Session: "{{ metabase_session }}"
-          status_code: 200
-          validate_certs: false
-        register: metabase_db_query
 
-      - name: verify sample db deletion
-        ansible.builtin.fail:
-          msg: "Sample databases have not been removed from Metabase"
-        vars:
-          extra_dbs: "{{ metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') }}"
-        when: extra_dbs | length > 0
+      - name: verify metabase dbs
+        block:
 
-      - name: verify metabase db creation
-        ansible.builtin.fail:
-          msg: "Database 'dataplane' has not been registered to Metabase"
-        vars:
-          metabase_dbs: "{{ metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') }}"
-        when: metabase_dbs | length < 1
+          - name: query metabase dbs
+            ansible.builtin.uri:
+              url: "https://{{ metabase_host }}/api/database/?include=tables"
+              method: GET
+              headers:
+                Host: "{{ dataplane_metabase_hostname }}"
+                Content-Type: application/json
+                X-Metabase-Session: "{{ metabase_session }}"
+              status_code: 200
+              validate_certs: false
+            register: metabase_db_query
+            retries: 10
+            delay: 30
+            until:
+              - metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') | length == 0
+              - metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') | length == 1
+
+        rescue:
+
+          - name: verify sample db deletion
+            ansible.builtin.fail:
+              msg: "Sample databases have not been removed from Metabase"
+            vars:
+              extra_dbs: "{{ metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') }}"
+            when: extra_dbs | length > 0
+
+          - name: verify metabase db creation
+            ansible.builtin.fail:
+              msg: "Database 'dataplane' has not been registered to Metabase"
+            vars:
+              metabase_dbs: "{{ metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') }}"
+            when: metabase_dbs | length < 1
