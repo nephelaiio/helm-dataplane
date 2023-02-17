@@ -25,7 +25,10 @@ jobs:
         uses: azure/setup-kubectl@v3
 
       - name: lint chart
-        run: helm lint charts/dataplane
+        uses: helm/chart-testing-action@master
+        with:
+          command: lint
+          config: .github/ct.yaml
 
   molecule:
 

@@ -1,0 +1,11 @@
+---
+lint-chart:
+  runs-on: ubuntu-latest
+  steps:
+    - name: checkout
+      uses: actions/checkout@v1
+    - name: lint
+      uses: helm/chart-testing-action@master
+      with:
+        command: lint
+        config: .github/ct.yaml
