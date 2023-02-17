@@ -13,8 +13,8 @@ util:
 
 cdc:
 
-    postgres: []
-    mysql: []
+  postgres: []
+  mysql: []
 
 strimzi:
 
