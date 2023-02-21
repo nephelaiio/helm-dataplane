@@ -8,11 +8,13 @@ on:
       - master
     paths:
       - 'charts/**'
+      - '.github/workflows/lint.yml'
   push:
     branches:
       - master
     paths:
       - 'charts/**'
+      - '.github/workflows/lint.yml'
   schedule:
     - cron: "0 5 * * 5"
 
