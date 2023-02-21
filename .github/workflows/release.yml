@@ -2,6 +2,12 @@
 name: release chart
 
 on:
+
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'charts/**'
   push:
     branches:
       - master
@@ -24,3 +30,5 @@ jobs:
 
       - name: release chart
         uses: helm/chart-releaser-action@master
+        env:
+          CR_TOKEN: '${{ secrets.GH_TOKEN }}'

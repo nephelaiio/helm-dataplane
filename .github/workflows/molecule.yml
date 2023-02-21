@@ -4,36 +4,17 @@ name: molecule
 on:
 
   pull_request:
+    paths:
+      - 'charts/**'
   push:
     branches:
       - master
+    paths:
+      - 'charts/**'
   schedule:
     - cron: "0 5 * * 5"
 
 jobs:
-
-  lint:
-
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: check out the codebase
-        uses: actions/checkout@v2
-
-      - name: install kubectl
-        uses: azure/setup-kubectl@v3
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-          check-latest: true
-
-      - name: set up chart-testing
-        uses: helm/chart-testing-action@v2.3.1
-
-      - name: lint charts
-        run: ct lint --chart-dirs $GITHUB_WORKSPACE/charts --all --validate-maintainers=false
 
   molecule:
 

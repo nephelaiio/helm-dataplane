@@ -1,4 +1,0 @@
----
-helm-extra-args: --all
-check-version-increment: true
-validate-maintainers: false
