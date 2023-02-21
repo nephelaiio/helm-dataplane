@@ -6,11 +6,13 @@ on:
   pull_request:
     paths:
       - 'charts/**'
+      - '.github/workflows/molecule.yml'
   push:
     branches:
       - master
     paths:
       - 'charts/**'
+      - '.github/workflows/molecule.yml'
   schedule:
     - cron: "0 5 * * 5"
 

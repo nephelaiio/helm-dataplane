@@ -19,6 +19,8 @@ on:
 jobs:
 
   release:
+
+    name: publish helm charts
     runs-on: ubuntu-latest
     steps:
 
