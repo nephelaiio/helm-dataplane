@@ -4,9 +4,8 @@ name: molecule
 on:
 
   pull_request:
-    paths:
-      - 'charts/**'
-      - '.github/workflows/molecule.yml'
+    branches:
+      - master
   push:
     branches:
       - master
