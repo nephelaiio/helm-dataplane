@@ -3,18 +3,10 @@ name: release chart
 
 on:
 
-  pull_request:
-    branches:
-      - master
-    paths:
-      - 'charts/**'
-      - '.github/workflows/release.yml'
+
   push:
-    branches:
-      - master
-    paths:
-      - 'charts/**'
-      - '.github/workflows/release.yml'
+    tags:
+      - "*"
 
 jobs:
 
