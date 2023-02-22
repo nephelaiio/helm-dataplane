@@ -5,17 +5,18 @@
 # See: https://github.com/marketplace/actions/publish-ansible-role-to-galaxy
 # See: https://github.com/ansible/galaxy/issues/46
 
-name: release
+name: docker
 on:
+
   push:
     tags:
       - "*"
 
 jobs:
 
-  release:
+  docker:
 
-    name: Release
+    name: publish docker images
     runs-on: ubuntu-latest
 
     steps:

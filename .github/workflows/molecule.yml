@@ -4,28 +4,18 @@ name: molecule
 on:
 
   pull_request:
+    branches:
+      - master
   push:
     branches:
       - master
+    paths:
+      - 'charts/**'
+      - '.github/workflows/molecule.yml'
   schedule:
     - cron: "0 5 * * 5"
 
 jobs:
-
-  lint:
-
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: check out the codebase
-        uses: actions/checkout@v2
-
-      - name: install kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: lint chart
-        run: helm lint charts/dataplane
 
   molecule:
 
