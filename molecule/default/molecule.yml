@@ -113,7 +113,6 @@ provisioner:
             metabase:
               admin:
                 email: metabase@nephelai.io
-                password: metabase
               ingress:
                 enabled: true
                 className: nginx-private
