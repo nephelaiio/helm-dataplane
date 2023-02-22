@@ -11,6 +11,14 @@ A helm chart to deploy a CDC replication stack integrating the following compone
 * Strimzi Kafka Connect PostgreSQL sink
 * Strimzi Kafka Connect PostgreSQL sources
 
+## Installation
+
+``` sh
+helm repo add dataplane https://nephelaiio.github.io/helm-dataplane/
+helm repo update
+helm install dataplane/dataplane
+```
+
 ## TODO
 In order of priority
 * Add support for MySQL sources
