@@ -45,4 +45,4 @@ jobs:
         with:
           context: "{{defaultContext}}:util"
           push: true
-          tags: nephelaiio/dataplane-util:${{  github.ref_name }}
+          tags: nephelaiio/dataplane-util:${{ github.ref_name }}
