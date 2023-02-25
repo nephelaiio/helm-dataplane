@@ -67,12 +67,12 @@ provisioner:
           dataplane_path: ${MOLECULE_PROJECT_DIRECTORY}
           dataplane_metabase_hostname: "metabase.{{ k8s_cluster_name }}"
           dataplane_chart_values:
-            registry:
+            util:
+              image:
+                repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-util"
+                tag: latest
+            metabase:
               init:
-                image:
-                  repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-util"
-                  tag: latest
-              hook:
                 image:
                   repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-util"
                   tag: latest
