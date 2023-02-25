@@ -51,7 +51,6 @@ provisioner:
           kind_nodes: 1
           kind_registry_hostname: molecule-dataplane-registry
           kind_registry_port: 49153
-          kind_proxy_deploy: false
 
           # test vardefs
           dataplane_pagila_namespace: dataplane
