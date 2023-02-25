@@ -7,7 +7,7 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
-  name: {{ $fullName }}-{{ $db.servername }}-{{ $db.dbname }}
+  name: {{ $fullName }}-{{ $db.servername | lower }}-{{ $db.dbname | lower }}
   labels:
     strimzi.io/cluster: {{ $fullName }}
 spec:
