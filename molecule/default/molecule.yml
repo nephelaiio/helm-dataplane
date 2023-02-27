@@ -81,7 +81,7 @@ provisioner:
                 - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                   port: 5432
                   servername: pagila
-                  dbname: db
+                  dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
             strimzi:
               connect:
