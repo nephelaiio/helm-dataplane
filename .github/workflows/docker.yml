@@ -38,11 +38,11 @@ jobs:
         with:
           context: "{{defaultContext}}:connect"
           push: true
-          tags: nephelaiio/dataplane-connect:${{  github.ref_name }}
+          tags: nephelaiio/dataplane-connect:latest,nephelaiio/dataplane-connect:${{  github.ref_name }}
 
       - name: build and push util image
         uses: docker/build-push-action@v3
         with:
           context: "{{defaultContext}}:util"
           push: true
-          tags: nephelaiio/dataplane-util:${{ github.ref_name }}
+          tags: nephelaiio/dataplane-util:latest,nephelaiio/dataplane-util:${{ github.ref_name }}
