@@ -1,8 +1,6 @@
 ##
-# nephelaiio.k8s Ansible role
+# Dataplane Helm chart
 #
-# @file
-# @version 0.1.1
 
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
