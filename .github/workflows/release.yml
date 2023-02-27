@@ -3,10 +3,9 @@ name: release chart
 
 on:
 
-
   push:
-    tags:
-      - "*"
+    branches:
+      - "master"
 
 jobs:
 
