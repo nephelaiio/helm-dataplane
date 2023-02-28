@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+      - name: update package cache
+        run: sudo apt-get update
+
       - name: checkout
         uses: actions/checkout@v1
         with:

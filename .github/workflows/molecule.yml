@@ -33,6 +33,9 @@ jobs:
 
     steps:
 
+      - name: update package cache
+        run: sudo apt-get update
+
       - name: check out the codebase.
         uses: actions/checkout@v2
 

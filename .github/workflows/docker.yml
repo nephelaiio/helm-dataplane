@@ -21,6 +21,9 @@ jobs:
 
     steps:
 
+      - name: update package cache
+        run: sudo apt-get update
+
       - name: set up quemu
         uses: docker/setup-qemu-action@v2
 

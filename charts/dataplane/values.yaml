@@ -8,7 +8,7 @@ util:
   image:
     repository: nephelaiio/dataplane-util
     pullPolicy: IfNotPresent
-    tag: 0.1.4
+    tag: 0.1.5
   resources: {}
 
 cdc:
@@ -39,7 +39,7 @@ strimzi:
   connect:
     image:
       repository: nephelaiio/dataplane-connect
-      tag: 0.1.4
+      tag: 0.1.5
     replicas: 1
     config:
       group.id: connect-cluster
@@ -67,8 +67,7 @@ zalando:
     instances: 2
     volume: 10Gi
     serviceAnnotations: {}
-    allowedSourceRanges:
-      - 127.0.0.1
+    allowedSourceRanges: 0.0.0.0/0
 
   warehouse:
     name: warehouse
@@ -77,8 +76,7 @@ zalando:
     instances: 2
     volume: 10Gi
     serviceAnnotations: {}
-    allowedSourceRanges:
-      - 127.0.0.1
+    allowedSourceRanges: 0.0.0.0/0
 
 metabase:
 
@@ -96,7 +94,7 @@ metabase:
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: 0.1.4
+      tag: 0.1.5
     securityContext: {}
 
   image:
