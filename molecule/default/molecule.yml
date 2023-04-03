@@ -109,6 +109,7 @@ provisioner:
                   size: 10Gi
                   class: standard
                 config:
+                  acks: all
                   offsets.topic.replication.factor: 3
                   transaction.state.log.replication.factor: 3
                   transaction.state.log.min.isr: 3
