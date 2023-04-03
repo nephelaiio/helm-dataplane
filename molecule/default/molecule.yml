@@ -48,7 +48,7 @@ provisioner:
           kind_net_addr: 172.19.0.0/24
           kind_cluster_name: molecule-dataplane
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
-          kind_nodes: 3
+          kind_nodes: 4
           kind_registry_hostname: molecule-dataplane-registry
           kind_registry_port: 49153
 
@@ -98,6 +98,10 @@ provisioner:
                   repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-connect"
                   tag: latest
                 secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+                config:
+                  config.storage.replication.factor: 3
+                  offset.storage.replication.factor: 3
+                  status.storage.replication.factor: 3
               kafka:
                 replicas: 3
                 brokers: 3
