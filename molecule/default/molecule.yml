@@ -48,7 +48,7 @@ provisioner:
           kind_net_addr: 172.19.0.0/24
           kind_cluster_name: molecule-dataplane
           kind_kubeconfig: "{{ k8s_kubeconfig }}"
-          kind_nodes: 1
+          kind_nodes: 3
           kind_registry_hostname: molecule-dataplane-registry
           kind_registry_port: 49153
 
@@ -76,6 +76,15 @@ provisioner:
                 image:
                   repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-util"
                   tag: latest
+              admin:
+                email: metabase@nephelai.io
+                password: dataplane
+              ingress:
+                enabled: true
+                className: nginx-private
+                hostName: "{{ dataplane_metabase_hostname }}"
+                annotations:
+                  cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
             cdc:
               postgres:
                 - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
@@ -90,13 +99,18 @@ provisioner:
                   tag: latest
                 secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
               kafka:
+                replicas: 3
+                brokers: 3
                 storage:
                   size: 10Gi
                   class: standard
                 config:
-                  offsets.topic.replication.factor: 1
-                  transaction.state.log.replication.factor: 1
-                  transaction.state.log.min.isr: 1
+                  offsets.topic.replication.factor: 3
+                  transaction.state.log.replication.factor: 3
+                  transaction.state.log.min.isr: 3
+                  num.partitions: 3
+                  default.replication.factor: 3
+                  min.insync.replicas: 2
               zookeeper:
                 storage:
                   size: 10Gi
@@ -110,16 +124,6 @@ provisioner:
                 instances: 1
                 loadBalancer: true
                 allowedSourceRanges: 0.0.0.0/0
-            metabase:
-              admin:
-                email: metabase@nephelai.io
-                password: metabase
-              ingress:
-                enabled: true
-                className: nginx-private
-                hostName: "{{ dataplane_metabase_hostname }}"
-                annotations:
-                  cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
 
 verifier:
   name: ansible
