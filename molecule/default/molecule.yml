@@ -99,6 +99,7 @@ provisioner:
                   tag: latest
                 secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                 config:
+                  acks: all
                   config.storage.replication.factor: 3
                   offset.storage.replication.factor: 3
                   status.storage.replication.factor: 3
@@ -109,7 +110,6 @@ provisioner:
                   size: 10Gi
                   class: standard
                 config:
-                  acks: all
                   offsets.topic.replication.factor: 3
                   transaction.state.log.replication.factor: 3
                   transaction.state.log.min.isr: 3
