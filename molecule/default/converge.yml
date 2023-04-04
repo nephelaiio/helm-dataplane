@@ -94,8 +94,7 @@
             api_version='acid.zalan.do/v1',
             kind='postgresql',
             kubeconfig=k8s_kubeconfig
-          )
-        }}"
+          )}}"
       retries: 15
       delay: 30
       until: cluster_failed | length == 0
@@ -103,7 +102,7 @@
         - (cluster_status | length) != (cluster_query | length)
         - cluster_failed | length > 0
 
-    - name: deploy metabase helm chart
+    - name: deploy dataplane helm chart
       kubernetes.core.helm:
         state: present
         name: "{{ dataplane_chart }}"
@@ -112,7 +111,7 @@
         create_namespace: true
         force: true
         wait: false
-        timeout: 20m
+        timeout: 30m
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
         values: "{{ dataplane_chart_values }}"
@@ -129,8 +128,7 @@
             api_version='acid.zalan.do/v1',
             kind='postgresql',
             kubeconfig=k8s_kubeconfig
-          )
-        }}"
+          )}}"
       retries: 15
       delay: 30
       until: cluster_failed | length == 0
@@ -151,8 +149,7 @@
             namespace=dataplane_pagila_namespace,
             kind='Secret',
             kubeconfig=k8s_kubeconfig
-          )
-        }}"
+          )}}"
 
     - name: query pagila service data
       ansible.builtin.set_fact:
@@ -166,8 +163,7 @@
             namespace=dataplane_pagila_namespace,
             kind='Service',
             kubeconfig=k8s_kubeconfig
-          )
-        }}"
+          )}}"
 
     - name: wait for database port open
       ansible.builtin.wait_for:
