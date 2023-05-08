@@ -16,23 +16,29 @@
         name: nephelaiio.kind
 
     - name: set helm release metadata
+      when: helm_release is not defined
       block:
 
         - name: query helm releases
-          community.general.github_release:
-            user: helm
-            repo: helm
-            action: latest_release
-            token: "{{ _token if _token != '' else omit }}"
+          ansible.builtin.uri:
+            url: https://api.github.com/repos/helm/helm/releases/latest
+            headers: "{{ _headers }}"
           vars:
             _token: "{{ lookup('ansible.builtin.env', 'GH_TOKEN', default='') }}"
+            _header_auth:
+              Authorization: "Bearer {{ _token }}"
+            _headers: "{{ _header_auth if _token != '' else {} }}"
           register: helm_release_query
 
         - name: set kind release target
           ansible.builtin.set_fact:
-            helm_release: "{{ helm_release_query.tag }}"
+            helm_release: "{{ helm_release_query.json.tag_name }}"
 
-      when: helm_release is not defined
+      rescue:
+
+        - name: set kind release to failback
+          ansible.builtin.set_fact:
+            helm_release: v3.11.3
 
   tasks:
 
