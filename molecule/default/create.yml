@@ -22,6 +22,7 @@
           community.general.github_release:
             user: helm
             repo: helm
+            action: latest_release
             token: "{{ _token if _token != '' else omit }}"
           vars:
             _token: "{{ lookup('ansible.builtin.env', 'GH_TOKEN', default='') }}"
