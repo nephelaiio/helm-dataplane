@@ -6,14 +6,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
-    paths:
-      - 'charts/**'
-      - '.github/workflows/lint.yml'
-  schedule:
-    - cron: "0 5 * * 5"
 
 jobs:
 

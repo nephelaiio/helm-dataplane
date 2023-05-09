@@ -6,14 +6,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
-    paths:
-      - 'charts/**'
-      - '.github/workflows/molecule.yml'
-  schedule:
-    - cron: "0 5 * * 5"
 
 jobs:
 
@@ -28,6 +20,8 @@ jobs:
         scenario:
           - default
         include:
+          - release: v0.18.0
+            image: v1.25.8
           - release: v0.18.0
             image: v1.24.12
 
