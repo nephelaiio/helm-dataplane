@@ -58,7 +58,7 @@ spec:
             - "sh"
             - "-c"
             - >-
-              set -e
+              set -ex
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
               until \
                 curl -s \

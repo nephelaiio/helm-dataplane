@@ -85,6 +85,7 @@ provisioner:
                 hostName: "{{ dataplane_metabase_hostname }}"
                 annotations:
                   cert-manager.io/cluster-issuer: "{{ k8s_certmanager_issuer_name }}"
+              passwordComplexity: weak
             cdc:
               postgres:
                 - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"

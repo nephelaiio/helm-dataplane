@@ -40,6 +40,8 @@ spec:
           resources:
             {{- toYaml .Values.metabase.resources | nindent 12 }}
           env:
+            - name: "MB_PASSWORD_COMPLEXITY"
+              value: {{ .Values.metabase.passwordComplexity }}
             - name: "MB_SITE_URL"
               value: "https://{{ .Values.metabase.ingress.hostName }}"
             - name: "MB_SITE_LOCALE"

@@ -115,10 +115,6 @@
         kubeconfig: "{{ k8s_kubeconfig }}"
         binary_path: "{{ k8s_helm_bin }}"
         values: "{{ dataplane_chart_values }}"
-      register: helm_operation
-      retries: 2
-      delay: 5
-      until: helm_operation is succeeded
 
     - name: wait for database cluster startup
       ansible.builtin.fail:
