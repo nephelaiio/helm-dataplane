@@ -143,21 +143,13 @@ spec:
                 }" \
                 http://{{ $svcName }}:{{ $svcPort }}/api/session | jq '.id' -r);
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] query sample metabase db";
-              db_sample_retries=6;
-              db_sample_retry="$db_sample_retries";
-              db_sample="null";
-              while [[ "$db_sample" == "null" && $db_retry > 0 ]]; do
-                db_sample_retry=$(( db_sample_retry - 1 ))
-                sleep 30;
-                db_sample=$(curl -s -X GET \
-                  -H "Accept: application/json" \
-                  -H "X-Forwarded-Host: $MB_SITE_URL" \
-                  -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
-                  -H "X-Metabase-Session: $token" \
-                  http://{{ $svcName }}:{{ $svcPort }}/api/database |
-                  jq ".data | map(select(.name == \"Sample Database\")) | .[0].id" -r);
-                echo "[$(date -Iseconds)] [INFO] [metabase-setup] sample metabse db not present ($db_sample_retry/$db_sample_retries)";
-              done;
+              db_sample=$(curl -s -X GET \
+                -H "Accept: application/json" \
+                -H "X-Forwarded-Host: $MB_SITE_URL" \
+                -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
+                -H "X-Metabase-Session: $token" \
+                http://{{ $svcName }}:{{ $svcPort }}/api/database |
+                jq ".data | map(select(.name == \"Sample Database\")) | .[0].id" -r);
               if [[ "$db_sample" != "null" ]]; then
                 echo "[$(date -Iseconds)] [INFO] [metabase-setup] delete sample metabase db";
                 echo "$db_sample" | xargs -I{} \
