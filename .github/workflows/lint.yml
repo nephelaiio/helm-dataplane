@@ -6,14 +6,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
-    paths:
-      - 'charts/**'
-      - '.github/workflows/lint.yml'
-  schedule:
-    - cron: "0 5 * * 5"
 
 jobs:
 
@@ -27,7 +19,7 @@ jobs:
         run: sudo apt-get update
 
       - name: check out the codebase
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: install kubectl
         uses: azure/setup-kubectl@v3

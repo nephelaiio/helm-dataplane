@@ -16,6 +16,7 @@
         name: nephelaiio.kind
 
     - name: set helm release metadata
+      when: helm_release is not defined
       block:
 
         - name: query helm releases
@@ -33,7 +34,11 @@
           ansible.builtin.set_fact:
             helm_release: "{{ helm_release_query.json.tag_name }}"
 
-      when: helm_release is not defined
+      rescue:
+
+        - name: set kind release to failback
+          ansible.builtin.set_fact:
+            helm_release: v3.11.3
 
   tasks:
 

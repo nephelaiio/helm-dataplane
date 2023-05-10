@@ -28,8 +28,7 @@
             namespace=dataplane_pagila_namespace,
             kind='Secret',
             kubeconfig=k8s_kubeconfig
-          )
-        }}"
+          )}}"
 
     - name: query pagila service data
       ansible.builtin.set_fact:
@@ -43,8 +42,7 @@
             namespace=dataplane_pagila_namespace,
             kind='Service',
             kubeconfig=k8s_kubeconfig
-          )
-        }}"
+          )}}"
 
     - name: create pagila debezium signal schema
       community.postgresql.postgresql_schema:

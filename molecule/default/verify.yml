@@ -265,6 +265,7 @@
             vars:
               extra_dbs: "{{ metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') }}"
             when: extra_dbs | length > 0
+            ignore_errors: true
 
           - name: verify metabase db creation
             ansible.builtin.fail:

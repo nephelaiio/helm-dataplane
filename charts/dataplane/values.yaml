@@ -117,6 +117,7 @@ metabase:
     - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
       value: "true"
 
+  passwordComplexity: 'strong'
   securityContext: {}
   podSecurityContext: {}
   podAnnotations: {}

@@ -58,7 +58,7 @@ spec:
             - "sh"
             - "-c"
             - >-
-              set -e
+              set -ex
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
               until \
                 curl -s \
@@ -148,7 +148,8 @@ spec:
                 -H "X-Forwarded-Host: $MB_SITE_URL" \
                 -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
                 -H "X-Metabase-Session: $token" \
-                http://{{ $svcName }}:{{ $svcPort }}/api/database | jq ".data | map(select(.name == \"Sample Database\")) | .[0].id" -r);
+                http://{{ $svcName }}:{{ $svcPort }}/api/database |
+                jq ".data | map(select(.name == \"Sample Database\")) | .[0].id" -r);
               if [[ "$db_sample" != "null" ]]; then
                 echo "[$(date -Iseconds)] [INFO] [metabase-setup] delete sample metabase db";
                 echo "$db_sample" | xargs -I{} \
