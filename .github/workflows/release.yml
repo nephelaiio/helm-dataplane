@@ -3,14 +3,19 @@ name: release chart
 
 on:
 
-  push:
+  pull_request:
     branches:
       - master
+    types:
+      - closed
+    paths:
+      - 'charts/**/Chart.yml'
 
 jobs:
 
   release:
 
+    if: github.event.pull_request.merged == true
     name: publish helm charts
     runs-on: ubuntu-latest
     steps:
