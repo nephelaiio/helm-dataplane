@@ -9,7 +9,7 @@ on:
     types:
       - closed
     paths:
-      - 'charts/**/Chart.yml'
+      - 'charts/**/Chart.yaml'
 
 jobs:
 
