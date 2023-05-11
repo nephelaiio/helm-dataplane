@@ -8,7 +8,7 @@ util:
   image:
     repository: nephelaiio/dataplane-util
     pullPolicy: IfNotPresent
-    tag: 0.1.6
+    tag: 0.1.7
   resources: {}
 
 cdc:
@@ -39,7 +39,7 @@ strimzi:
   connect:
     image:
       repository: nephelaiio/dataplane-connect
-      tag: 0.1.6
+      tag: 0.1.7
     replicas: 1
     config:
       group.id: connect-cluster
@@ -94,7 +94,7 @@ metabase:
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: 0.1.6
+      tag: 0.1.7
     securityContext: {}
 
   image:
