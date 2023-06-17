@@ -4,7 +4,6 @@ nameOverride: ""
 fullnameOverride: ""
 
 util:
-
   image:
     repository: nephelaiio/dataplane-util
     pullPolicy: IfNotPresent
@@ -12,14 +11,12 @@ util:
   resources: {}
 
 cdc:
-
   postgres: []
   mysql: []
 
 strimzi:
-
   kafka:
-    version: "3.2.3"
+    version: "3.4.0"
     replicas: 1
     brokers: 1
     annotations: {}
@@ -59,7 +56,6 @@ strimzi:
       class: ""
 
 zalando:
-
   metabase:
     name: metabase
     version: 14
@@ -79,7 +75,6 @@ zalando:
     allowedSourceRanges: 0.0.0.0/0
 
 metabase:
-
   db: dataplane
 
   replicaCount: 2
@@ -117,7 +112,7 @@ metabase:
     - name: "MB_REDIRECT_ALL_REQUESTS_TO_HTTPS"
       value: "true"
 
-  passwordComplexity: 'strong'
+  passwordComplexity: "strong"
   securityContext: {}
   podSecurityContext: {}
   podAnnotations: {}
@@ -127,7 +122,6 @@ metabase:
   affinity: {}
 
 registry:
-
   image:
     repository: confluentinc/cp-schema-registry
     pullPolicy: IfNotPresent
