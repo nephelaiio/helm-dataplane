@@ -1,3 +1,4 @@
+{{- $metabaseStorageClass := required "Metabase storage class is required" .Values.zalando.metabase.class }}
 ---
 apiVersion: acid.zalan.do/v1
 kind: postgresql
@@ -7,6 +8,7 @@ spec:
   teamId: {{ include "dataplane.zalando.team" . }}
   volume:
     size: {{ .Values.zalando.metabase.volume }}
+    storageClass: {{ $metabaseStorageClass }}
   numberOfInstances: {{ .Values.zalando.metabase.instances }}
   allowedSourceRanges:
   {{- with .Values.zalando.metabase.allowedSourceRanges }}

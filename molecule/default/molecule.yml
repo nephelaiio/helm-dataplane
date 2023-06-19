@@ -126,10 +126,12 @@ provisioner:
                 instances: 1
                 loadBalancer: true
                 allowedSourceRanges: 0.0.0.0/0
+                class: standard
               warehouse:
                 instances: 1
                 loadBalancer: true
                 allowedSourceRanges: 0.0.0.0/0
+                class: standard
 
 verifier:
   name: ansible
