@@ -1,3 +1,4 @@
+{{- $dataplaneStorageClass := required "Dataplane storage class is required" .Values.zalando.metabase.class }}
 ---
 {{- if (gt (int .Values.zalando.warehouse.instances) 0) }}
 apiVersion: acid.zalan.do/v1
@@ -8,6 +9,7 @@ spec:
   teamId: {{ include "dataplane.zalando.team" . }}
   volume:
     size: {{ .Values.zalando.warehouse.volume }}
+    storageClass: {{ .Values.zalando.metabase.class }}
   numberOfInstances: {{ .Values.zalando.warehouse.instances }}
   allowedSourceRanges:
   {{- with .Values.zalando.warehouse.allowedSourceRanges }}

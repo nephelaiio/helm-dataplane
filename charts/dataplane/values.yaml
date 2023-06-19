@@ -64,6 +64,7 @@ zalando:
     volume: 10Gi
     serviceAnnotations: {}
     allowedSourceRanges: 0.0.0.0/0
+    class: ""
 
   warehouse:
     name: warehouse
@@ -73,6 +74,7 @@ zalando:
     volume: 10Gi
     serviceAnnotations: {}
     allowedSourceRanges: 0.0.0.0/0
+    class: ""
 
 metabase:
   db: dataplane
