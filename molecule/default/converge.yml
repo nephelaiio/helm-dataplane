@@ -6,11 +6,9 @@
   gather_facts: false
 
   roles:
-
     - nephelaiio.plugins
 
   tasks:
-
     - name: wait for strimzi crd deployment
       kubernetes.core.k8s_info:
         api_version: v1
@@ -86,15 +84,14 @@
       ansible.builtin.fail:
         msg: "zalando clusters failed to come up on time"
       vars:
-        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
+        cluster_failed_data: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') }}"
+        cluster_failed: "{{ cluster_failed_data | map(attribute='metadata.name') }}"
         cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
-        cluster_query: "{{
-          query(
-            'kubernetes.core.k8s',
-            api_version='acid.zalan.do/v1',
-            kind='postgresql',
-            kubeconfig=k8s_kubeconfig
-          )}}"
+        cluster_query: "{{ query(
+          'kubernetes.core.k8s',
+          api_version='acid.zalan.do/v1',
+          kind='postgresql',
+          kubeconfig=k8s_kubeconfig) }}"
       retries: 15
       delay: 30
       until: cluster_failed | length == 0
@@ -122,13 +119,11 @@
       vars:
         cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
         cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
-        cluster_query: "{{
-          query(
-            'kubernetes.core.k8s',
-            api_version='acid.zalan.do/v1',
-            kind='postgresql',
-            kubeconfig=k8s_kubeconfig
-          )}}"
+        cluster_query: "{{ query(
+          'kubernetes.core.k8s',
+          api_version='acid.zalan.do/v1',
+          kind='postgresql',
+          kubeconfig=k8s_kubeconfig) }}"
       retries: 15
       delay: 30
       until: cluster_failed | length == 0
@@ -138,32 +133,28 @@
 
     - name: query pagila connection data
       ansible.builtin.set_fact:
-        pagila_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
-        pagila_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
+        pagila_user: "{{ _db_secret_data.data.username | b64decode }}"
+        pagila_pass: "{{ _db_secret_data.data.password | b64decode }}"
       vars:
-        pagila_db_secret_name: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
-        pagila_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', pagila_db_secret_name) | first }}"
-        secret_query: "{{
-          query(
-            'kubernetes.core.k8s',
-            namespace=dataplane_pagila_namespace,
-            kind='Secret',
-            kubeconfig=k8s_kubeconfig
-          )}}"
+        _db_secret_name: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+        _db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', _db_secret_name) | first }}"
+        secret_query: "{{ query(
+          'kubernetes.core.k8s',
+          namespace=dataplane_pagila_namespace,
+          kind='Secret',
+          kubeconfig=k8s_kubeconfig) }}"
 
     - name: query pagila service data
       ansible.builtin.set_fact:
-        pagila_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
+        pagila_host: "{{ _db_svc_data.status.loadBalancer.ingress[0].ip }}"
       vars:
-        pagila_db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
-        pagila_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', pagila_db_svc_name) | first }}"
-        service_query: "{{
-          query(
-            'kubernetes.core.k8s',
-            namespace=dataplane_pagila_namespace,
-            kind='Service',
-            kubeconfig=k8s_kubeconfig
-          )}}"
+        _db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+        _db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', _db_svc_name) | first }}"
+        service_query: "{{ query(
+          'kubernetes.core.k8s',
+          namespace=dataplane_pagila_namespace,
+          kind='Service',
+          kubeconfig=k8s_kubeconfig) }}"
 
     - name: wait for database port open
       ansible.builtin.wait_for:
@@ -185,8 +176,8 @@
       register: datadir
       changed_when: false
 
-    - block:
-
+    - name: load pagila data
+      block:
         - name: fetch pagila schema file
           ansible.builtin.get_url:
             url: https://github.com/devrimgunduz/pagila/raw/master/pagila-schema.sql
@@ -200,7 +191,8 @@
           changed_when: false
 
         - name: concatenate pagila sql files
-          ansible.builtin.shell: "cat {{ datadir.path }}/schema.sql {{ datadir.path }}/data.sql > {{ datadir.path }}/pagila.sql"
+          ansible.builtin.shell: >
+            cat {{ datadir.path }}/schema.sql {{ datadir.path }}/data.sql > {{ datadir.path }}/pagila.sql
 
         - name: load pagila db data
           community.postgresql.postgresql_db:
@@ -213,7 +205,6 @@
           changed_when: false
 
       always:
-
         - name: destroy data tempdir
           ansible.builtin.file:
             state: absent

@@ -6,7 +6,6 @@
   gather_facts: false
 
   vars:
-
     k8s_deploy: false
     k8s_verify: "{{ lookup('ansible.builtin.env', 'K8S_VERIFY', default='true') | bool }}"
     k8s_strimzi_verify: false
@@ -16,52 +15,45 @@
     verify_pagila_user: postgres
 
   roles:
-
     - name: nephelaiio.plugins
     - name: nephelaiio.k8s
 
   tasks:
-
-    - when: lookup('ansible.builtin.env', 'CDC_VERIFY', default='true') | bool
+    - name: verify dataplane sink database
+      when: lookup('ansible.builtin.env', 'CDC_VERIFY', default='true') | bool
       block:
-
         - name: query pagila connection data
           ansible.builtin.set_fact:
-            pagila_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
-            pagila_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
+            pagila_user: "{{ _db_secret_data.data.username | b64decode }}"
+            pagila_pass: "{{ _db_secret_data.data.password | b64decode }}"
           vars:
-            pagila_db_secret_name: "{{ verify_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
-            pagila_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', pagila_db_secret_name) | first }}"
-            secret_query: "{{
-              query(
-                'kubernetes.core.k8s',
-                namespace=dataplane_pagila_namespace,
-                kind='Secret',
-                kubeconfig=k8s_kubeconfig
-              )
-            }}"
+            _db_secret_name: "{{ verify_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+            _db_secret_list: "{{ secret_query | selectattr('metadata.name', 'equalto', _db_secret_name) }}"
+            _db_secret_data: "{{ _db_secret_list | first }}"
+            secret_query: "{{ query(
+              'kubernetes.core.k8s',
+              namespace=dataplane_pagila_namespace,
+              kind='Secret',
+              kubeconfig=k8s_kubeconfig) }}"
 
         - name: query pagila service data
           ansible.builtin.set_fact:
-            pagila_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
+            pagila_host: "{{ _db_svc_data.status.loadBalancer.ingress[0].ip }}"
           vars:
-            pagila_db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
-            pagila_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', pagila_db_svc_name) | first }}"
-            service_query: "{{
-              query(
-                'kubernetes.core.k8s',
-                namespace=dataplane_pagila_namespace,
-                kind='Service',
-                kubeconfig=k8s_kubeconfig
-              )
-            }}"
+            _db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+            _db_svc_list: "{{ service_query | selectattr('metadata.name', 'equalto', _db_svc_name) }}"
+            _db_svc_data: "{{ _db_svc_list | first }}"
+            service_query: "{{ query(
+              'kubernetes.core.k8s',
+              namespace=dataplane_pagila_namespace,
+              kind='Service',
+              kubeconfig=k8s_kubeconfig) }}"
 
         - name: query pagila tables
           community.postgresql.postgresql_query:
             db: "{{ dataplane_pagila_db }}"
-            query: >-
-              SELECT table_name FROM information_schema.tables
-                WHERE table_schema='public' AND table_type='BASE TABLE'
+            query: |
+              SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'
             login_user: "{{ pagila_user }}"
             login_password: "{{ pagila_pass }}"
             login_host: "{{ pagila_host }}"
@@ -69,7 +61,9 @@
 
         - name: record source table data
           ansible.builtin.set_fact:
-            pagila_tables: "{{ pagila_table_query.query_result | map(attribute='table_name') | difference(['payment']) | list }}"
+            pagila_tables: "{{ _table_names | difference(['payment']) | list }}"
+          vars:
+            _table_names: "{{ pagila_table_query.query_result | map(attribute='table_name') }}"
 
         - name: query pagila table data
           community.postgresql.postgresql_query:
@@ -87,41 +81,38 @@
 
         - name: query warehouse connection data
           ansible.builtin.set_fact:
-            warehouse_user: "{{ warehouse_db_secret_data.data.username | b64decode }}"
-            warehouse_pass: "{{ warehouse_db_secret_data.data.password | b64decode }}"
+            warehouse_user: "{{ _db_secret_data.data.username | b64decode }}"
+            warehouse_pass: "{{ _db_secret_data.data.password | b64decode }}"
           vars:
-            warehouse_db_secret_name: "postgres-{{ dataplane_chart }}-warehouse"
-            warehouse_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', warehouse_db_secret_name) | first }}"
-            secret_query: "{{
-              query(
-                'kubernetes.core.k8s',
-                namespace=dataplane_namespace,
-                kind='Secret',
-                kubeconfig=k8s_kubeconfig
-              )
-            }}"
+            _db_secret_name: "postgres-{{ dataplane_chart }}-warehouse"
+            _db_secret_list: "{{ secret_query | selectattr('metadata.name', 'equalto', _db_secret_name) }}"
+            _db_secret_data: "{{ _db_secret_list | first }}"
+            secret_query: "{{ query(
+              'kubernetes.core.k8s',
+              namespace=dataplane_namespace,
+              kind='Secret',
+              kubeconfig=k8s_kubeconfig) }}"
 
         - name: query warehouse service data
           ansible.builtin.set_fact:
-            warehouse_host: "{{ warehouse_db_svc_data.status.loadBalancer.ingress[0].ip }}"
+            warehouse_host: "{{ _db_svc_data.status.loadBalancer.ingress[0].ip }}"
           vars:
-            warehouse_db_svc_name: "{{ dataplane_chart }}-warehouse"
-            warehouse_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', warehouse_db_svc_name) | first }}"
-            service_query: "{{
-              query(
-                'kubernetes.core.k8s',
-                namespace=dataplane_namespace,
-                kind='Service',
-                kubeconfig=k8s_kubeconfig
-              )
-            }}"
+            _db_svc_name: "{{ dataplane_chart }}-warehouse"
+            _db_svc_list: "{{ service_query | selectattr('metadata.name', 'equalto', _db_svc_name) }}"
+            _db_svc_data: "{{ _db_svc_list | first }}"
+            service_query: "{{ query(
+              'kubernetes.core.k8s',
+              namespace=dataplane_namespace,
+              kind='Service',
+              kubeconfig=k8s_kubeconfig) }}"
 
-        - block:
-
+        - name: verify sink database table names
+          block:
             - name: verify warehouse tables
               community.postgresql.postgresql_query:
                 db: warehouse
-                query: "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
+                query: |
+                  SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'
                 login_user: "{{ warehouse_user }}"
                 login_password: "{{ warehouse_pass }}"
                 login_host: "{{ warehouse_host }}"
@@ -134,7 +125,6 @@
               until: warehouse_tables_expected | difference(warehouse_tables_found) | length == 0
 
           rescue:
-
             - name: debug table mismatches
               ansible.builtin.debug:
                 msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
@@ -168,7 +158,9 @@
 
         - name: verify warehouse table data
           ansible.builtin.fail:
-            msg: "warehouse data for table {{ source_table }} is incomplete, {{ warehouse_table_records }}/{{ source_table_records }} found"
+            msg: >-
+              warehouse data for table {{ source_table }} is incomplete,
+              {{ warehouse_table_records }}/{{ source_table_records }} found"
           vars:
             warehouse_table_records: "{{ (warehouse_data[warehouse_table].query_result | list)[0].count }}"
             warehouse_table: "pagila_{{ item }}"
@@ -179,97 +171,94 @@
           loop: "{{ (pagila_data.keys() | list) }}"
           when: source_table_records > warehouse_table_records
 
-    - when: lookup('ansible.builtin.env', 'METABASE_VERIFY', default='true') | bool
+    - name: verify metabase app database
+      when: lookup('ansible.builtin.env', 'METABASE_VERIFY', default='true') | bool
       block:
-
-      - name: query metabase service data
-        ansible.builtin.set_fact:
-          metabase_host: "{{ metabase_svc_data.status.loadBalancer.ingress[0].ip }}"
-        vars:
-          metabase_svc_name: "{{ dataplane_chart }}-metabase-app"
-          metabase_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', metabase_svc_name) | first }}"
-          service_query: "{{
-            query(
+        - name: query metabase service data
+          ansible.builtin.set_fact:
+            metabase_host: "{{ _svc_data.status.loadBalancer.ingress[0].ip }}"
+          vars:
+            _svc_name: "{{ dataplane_chart }}-metabase-app"
+            _svc_list: "{{ service_query | selectattr('metadata.name', 'equalto', _svc_name) }}"
+            _svc_data: "{{ _svc_list | first }}"
+            service_query: "{{ query(
               'kubernetes.core.k8s',
               namespace=dataplane_namespace,
               kind='Ingress',
-              kubeconfig=k8s_kubeconfig
-            )
-          }}"
+              kubeconfig=k8s_kubeconfig) }}"
 
-      - name: query metabase connection data
-        ansible.builtin.set_fact:
-          metabase_user: "{{ dataplane_chart_values.metabase.admin.email }}"
-          metabase_pass: "{{ metabase_admin_secret_data.data.password | b64decode }}"
-        vars:
-          metabase_admin_secret_name: "{{ dataplane_chart }}-metabase-admin"
-          metabase_admin_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', metabase_admin_secret_name) | first }}"
-          secret_query: "{{
-            query(
+        - name: query metabase connection data
+          ansible.builtin.set_fact:
+            metabase_user: "{{ dataplane_chart_values.metabase.admin.email }}"
+            metabase_pass: "{{ _admin_secret_data.data.password | b64decode }}"
+          vars:
+            _admin_secret_name: "{{ dataplane_chart }}-metabase-admin"
+            _admin_secret_list: "{{ secret_query | selectattr('metadata.name', 'equalto', _admin_secret_name) }}"
+            _admin_secret_data: "{{ _admin_secret_list | first }}"
+            secret_query: "{{ query(
               'kubernetes.core.k8s',
               namespace=dataplane_namespace,
               kind='Secret',
-              kubeconfig=k8s_kubeconfig
-            )
-          }}"
+              kubeconfig=k8s_kubeconfig) }}"
 
-      - name: debug metabase connection data
-        ansible.builtin.debug:
-          msg: "host={{ metabase_host }}, hostname={{ dataplane_metabase_hostname }}, user={{ metabase_user }}, password={{ metabase_pass }}"
-        ignore_errors: true
+        - name: debug metabase connection data
+          ansible.builtin.debug:
+            msg: >
+              host={{ metabase_host }},
+              hostname={{ dataplane_metabase_hostname }},
+              user={{ metabase_user }},
+              password={{ metabase_pass }}"
+          ignore_errors: true
 
-      - name: log in to metabase
-        ansible.builtin.uri:
-          url: "https://{{ metabase_host }}/api/session"
-          method: POST
-          body_format: json
-          body:
-            username: "{{ metabase_user }}"
-            password: "{{ metabase_pass }}"
-          headers:
-            Host: "{{ dataplane_metabase_hostname }}"
-          status_code: 200
-          validate_certs: false
-        register: metabase_login_query
+        - name: log in to metabase
+          ansible.builtin.uri:
+            url: "https://{{ metabase_host }}/api/session"
+            method: POST
+            body_format: json
+            body:
+              username: "{{ metabase_user }}"
+              password: "{{ metabase_pass }}"
+            headers:
+              Host: "{{ dataplane_metabase_hostname }}"
+            status_code: 200
+            validate_certs: false
+          register: metabase_login_query
 
-      - name: record metabase session id
-        ansible.builtin.set_fact:
-          metabase_session: "{{ metabase_login_query.json.id }}"
+        - name: record metabase session id
+          ansible.builtin.set_fact:
+            metabase_session: "{{ metabase_login_query.json.id }}"
 
+        - name: verify metabase app dbs
+          block:
+            - name: query metabase dbs
+              ansible.builtin.uri:
+                url: "https://{{ metabase_host }}/api/database/?include=tables"
+                method: GET
+                headers:
+                  Host: "{{ dataplane_metabase_hostname }}"
+                  Content-Type: application/json
+                  X-Metabase-Session: "{{ metabase_session }}"
+                status_code: 200
+                validate_certs: false
+              register: metabase_db_query
+              retries: 10
+              delay: 30
+              until:
+                - metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') | length == 0
+                - metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') | length == 1
 
-      - name: verify metabase dbs
-        block:
+          rescue:
+            - name: verify sample db deletion
+              ansible.builtin.fail:
+                msg: "Sample databases have not been removed from Metabase"
+              vars:
+                extra_dbs: "{{ metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') }}"
+              when: extra_dbs | length > 0
+              ignore_errors: true
 
-          - name: query metabase dbs
-            ansible.builtin.uri:
-              url: "https://{{ metabase_host }}/api/database/?include=tables"
-              method: GET
-              headers:
-                Host: "{{ dataplane_metabase_hostname }}"
-                Content-Type: application/json
-                X-Metabase-Session: "{{ metabase_session }}"
-              status_code: 200
-              validate_certs: false
-            register: metabase_db_query
-            retries: 10
-            delay: 30
-            until:
-              - metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') | length == 0
-              - metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') | length == 1
-
-        rescue:
-
-          - name: verify sample db deletion
-            ansible.builtin.fail:
-              msg: "Sample databases have not been removed from Metabase"
-            vars:
-              extra_dbs: "{{ metabase_db_query.json.data | rejectattr('name', 'equalto', 'dataplane') }}"
-            when: extra_dbs | length > 0
-            ignore_errors: true
-
-          - name: verify metabase db creation
-            ansible.builtin.fail:
-              msg: "Database 'dataplane' has not been registered to Metabase"
-            vars:
-              metabase_dbs: "{{ metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') }}"
-            when: metabase_dbs | length < 1
+            - name: verify metabase db creation
+              ansible.builtin.fail:
+                msg: "Database 'dataplane' has not been registered to Metabase"
+              vars:
+                metabase_dbs: "{{ metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') }}"
+              when: metabase_dbs | length < 1

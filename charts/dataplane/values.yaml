@@ -12,6 +12,15 @@ util:
 
 cdc:
   postgres: []
+  #  postgres:
+  #    - hostname: "network.hostname"
+  #      port: 5432
+  #      servername: "host.identifier"
+  #      dbname: "sourcedb"
+  #      signaling: "signaling_table"
+  #      partitions:
+  #        - source: "payments.*"
+  #          sink: "payments"
   mysql: []
 
 strimzi:
