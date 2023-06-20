@@ -1,7 +1,5 @@
 # nephelaiio.dataplane
 
-[![Build Status](https://github.com/nephelaiio/helm-dataplane/workflows/molecule/badge.svg)](https://github.com/nephelaiio/helm-dataplane/actions)
-
 A helm chart to deploy a CDC replication stack integrating the following components
 * Strimzi Kafka Broker
 * Zalando PostgreSQL Data Warehouse
