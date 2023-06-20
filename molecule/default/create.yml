@@ -6,11 +6,9 @@
   gather_facts: false
 
   roles:
-
     - nephelaiio.plugins
 
   pre_tasks:
-
     - name: deploy kind cluster
       ansible.builtin.include_role:
         name: nephelaiio.kind
@@ -18,7 +16,6 @@
     - name: set helm release metadata
       when: helm_release is not defined
       block:
-
         - name: query helm releases
           ansible.builtin.uri:
             url: https://api.github.com/repos/helm/helm/releases/latest
@@ -35,13 +32,11 @@
             helm_release: "{{ helm_release_query.json.tag_name }}"
 
       rescue:
-
         - name: set kind release to failback
           ansible.builtin.set_fact:
             helm_release: v3.11.3
 
   tasks:
-
     - name: create temporary directory
       ansible.builtin.tempfile:
         state: directory
@@ -51,7 +46,6 @@
 
     - name: install helm binary
       block:
-
         - name: download helm release package
           ansible.builtin.unarchive:
             src: "https://get.helm.sh/helm-{{ helm_release }}-linux-amd64.tar.gz"
@@ -70,17 +64,16 @@
             recurse: true
             use_regex: true
             patterns:
-              - '^helm$'
+              - "^helm$"
           register: helm_bin
 
         - name: copy helm executable
           ansible.builtin.copy:
             src: "{{ helm_bin.files[0].path }}"
             dest: "{{ k8s_helm_bin }}"
-            mode: '0755'
+            mode: "0755"
 
       always:
-
         - name: cleanup temp files
           ansible.builtin.file:
             state: absent

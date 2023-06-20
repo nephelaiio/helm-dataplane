@@ -7,11 +7,20 @@ util:
   image:
     repository: nephelaiio/dataplane-util
     pullPolicy: IfNotPresent
-    tag: dataplane-0.1.10
+    tag: dataplane-0.1.11
   resources: {}
 
 cdc:
   postgres: []
+  #  postgres:
+  #    - hostname: "network.hostname"
+  #      port: 5432
+  #      servername: "host.identifier"
+  #      dbname: "sourcedb"
+  #      signaling: "signaling_table"
+  #      partitions:
+  #        - source: "payments.*"
+  #          sink: "payments"
   mysql: []
 
 strimzi:
@@ -36,7 +45,7 @@ strimzi:
   connect:
     image:
       repository: nephelaiio/dataplane-connect
-      tag: dataplane-0.1.10
+      tag: dataplane-0.1.11
     replicas: 1
     config:
       group.id: connect-cluster
@@ -91,7 +100,7 @@ metabase:
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: dataplane-0.1.10
+      tag: dataplane-0.1.11
     securityContext: {}
 
   image:

@@ -21,10 +21,10 @@ helm install dataplane/dataplane
 
 ## TODO
 In order of priority
+* Add support for partitioned PostgreSQL tables
 * Add support for MySQL sources
 * Add config options for warehouse backups
 * Add monitoring for Kafka topics
-* Add Apache Flink deployment
 * Add table exclude support for cdc connectors
 
 ## Dependencies

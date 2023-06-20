@@ -93,6 +93,9 @@ provisioner:
                   servername: pagila
                   dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
+                  partitions:
+                    - source: "payments.*"
+                      sink: "payments"
             strimzi:
               connect:
                 image:
