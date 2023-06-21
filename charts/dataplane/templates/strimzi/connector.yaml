@@ -3,11 +3,13 @@
 {{- $registryPort := .Values.registry.service.port -}}
 
 {{- range $db := .Values.cdc.postgres }}
+{{- $dbConnectorName := lower (printf "%s-%s-%s" $fullName $db.servername $db.dbname) }}
+{{- $dbSlotName := $dbConnectorName | replace "-" "_" }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
-  name: {{ $fullName }}-{{ lower $db.servername }}-{{ lower $db.dbname }}
+  name: {{ $dbConnectorName }}
   labels:
     strimzi.io/cluster: {{ $fullName }}
 spec:
@@ -21,6 +23,7 @@ spec:
     database.server.name: "{{ $db.servername }}"
     database.dbname: "{{ $db.dbname }}"
     snapshot.new.tables: parallel
+    slot.name: "{{ $dbSlotName }}"
     tasks.max: "1"
     {{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) }}
     table.exclude.list: "{{- range $i, $p := $db.partitions -}}{{- if $i }},{{- end -}}{{ $p.source }}{{- end }}"
@@ -40,11 +43,13 @@ spec:
 {{- range $partition := $db.partitions }}
 {{- $partitionSource := required "partition source is required" $partition.source }}
 {{- $partitionSink := required "partition sink is required" $partition.sink }}
+{{- $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) }}
+{{- $partitionSlotName := $partitionConnectorName | replace "-" "_" }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
-  name: {{ $fullName }}-{{ lower $db.servername }}-{{ lower $db.dbname }}-{{ $partitionSink }}
+  name: {{ $partitionConnectorName }}
   labels:
     strimzi.io/cluster: {{ $fullName }}
 spec:
@@ -58,6 +63,7 @@ spec:
     database.server.name: "{{ $db.servername }}"
     database.dbname: "{{ $db.dbname }}"
     snapshot.new.tables: parallel
+    slot.name: {{ $partitionSlotName }}
     tasks.max: "1"
     table.include.list: "{{ $partitionSource }}"
     key.converter: io.confluent.connect.avro.AvroConverter
