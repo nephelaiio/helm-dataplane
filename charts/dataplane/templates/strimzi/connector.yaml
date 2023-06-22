@@ -64,6 +64,7 @@ spec:
     database.server.name: "{{ $db.servername }}"
     database.dbname: "{{ $db.dbname }}"
     snapshot.new.tables: parallel
+    plugin.name: pgoutput
     slot.name: {{ $partitionSlotName }}
     tasks.max: "1"
     table.include.list: "{{ $partitionSource }}"
