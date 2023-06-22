@@ -94,7 +94,7 @@ provisioner:
                   dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
                   partitions:
-                    - source: "payment.*"
+                    - source: "public.payment.*"
                       sink: "payment"
             strimzi:
               connect:

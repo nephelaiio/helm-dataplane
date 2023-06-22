@@ -39,11 +39,12 @@ spec:
     transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
     transforms.reroute.topic.regex: (.*)
     transforms.reroute.topic.replacement: cdc.$1
+
 {{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) }}
 {{- range $partition := $db.partitions }}
 {{- $partitionSource := required "partition source is required" $partition.source }}
 {{- $partitionSink := required "partition sink is required" $partition.sink }}
-{{- $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) }}
+{{- $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" }}
 {{- $partitionSlotName := $partitionConnectorName | replace "-" "_" }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
@@ -75,11 +76,12 @@ spec:
     {{- end }}
     transforms: reroute
     transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
-    transforms.reroute.topic.regex: (.*)
-    transforms.reroute.topic.replacement: cdc.{{ $partitionSink }}
+    transforms.reroute.topic.regex: "^([^\\.]+)\\.([^\\.]+)\\..*"
+    transforms.reroute.topic.replacement: "cdc.$1.$2.{{ $partitionSink }}"
 {{- end }}
 {{- end }}
 {{- end }}
+
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -106,5 +108,5 @@ spec:
     transforms.unwrap.drop.tombstones: false
     transforms.unwrap.delete.handling.mode: rewrite
     transforms.rename.type: org.apache.kafka.connect.transforms.RegexRouter
-    transforms.rename.regex: "^cdc\\.(.*)\\.(.*)\\.(.*)"
+    transforms.rename.regex: "^cdc\\.([^\\.]*)\\.([^\\.]*)\\.([^\\.]*)"
     transforms.rename.replacement: "$1_$3"
