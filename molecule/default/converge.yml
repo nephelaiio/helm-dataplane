@@ -99,6 +99,49 @@
         - (cluster_status | length) != (cluster_query | length)
         - cluster_failed | length > 0
 
+    - name: query pagila service data
+      ansible.builtin.set_fact:
+        pagila_host: "{{ _db_svc_data.status.loadBalancer.ingress[0].ip }}"
+      vars:
+        _db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+        _db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', _db_svc_name) | first }}"
+        service_query: "{{ query(
+          'kubernetes.core.k8s',
+          namespace=dataplane_pagila_namespace,
+          kind='Service',
+          kubeconfig=k8s_kubeconfig) }}"
+
+    - name: query pagila owner data
+      ansible.builtin.set_fact:
+        pagila_owner_user: "{{ _db_secret_data.data.username | b64decode }}"
+        pagila_owner_pass: "{{ _db_secret_data.data.password | b64decode }}"
+      vars:
+        _db_secret_name: "zalando-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+        _db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', _db_secret_name) | first }}"
+        secret_query: "{{ query(
+          'kubernetes.core.k8s',
+          namespace=dataplane_pagila_namespace,
+          kind='Secret',
+          kubeconfig=k8s_kubeconfig) }}"
+
+    - name: query pagila publications
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "SELECT * FROM pg_publication where pubname = 'dbz_publication'"
+        login_user: "{{ pagila_owner_user }}"
+        login_password: "{{ pagila_owner_pass }}"
+        login_host: "{{ pagila_host }}"
+      register: pagila_publication_query
+
+    - name: create pagila publication
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "CREATE PUBLICATION dbz_publication FOR ALL TABLES"
+        login_user: "{{ pagila_owner_user }}"
+        login_password: "{{ pagila_owner_pass }}"
+        login_host: "{{ pagila_host }}"
+      when: pagila_publication_query.query_all_results | flatten | length == 0
+
     - name: deploy dataplane helm chart
       kubernetes.core.helm:
         state: present
@@ -142,18 +185,6 @@
           'kubernetes.core.k8s',
           namespace=dataplane_pagila_namespace,
           kind='Secret',
-          kubeconfig=k8s_kubeconfig) }}"
-
-    - name: query pagila service data
-      ansible.builtin.set_fact:
-        pagila_host: "{{ _db_svc_data.status.loadBalancer.ingress[0].ip }}"
-      vars:
-        _db_svc_name: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
-        _db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', _db_svc_name) | first }}"
-        service_query: "{{ query(
-          'kubernetes.core.k8s',
-          namespace=dataplane_pagila_namespace,
-          kind='Service',
           kubeconfig=k8s_kubeconfig) }}"
 
     - name: wait for database port open
