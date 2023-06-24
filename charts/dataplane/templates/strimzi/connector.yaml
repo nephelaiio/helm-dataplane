@@ -3,8 +3,18 @@
 {{- $registryPort := .Values.registry.service.port -}}
 
 {{- range $db := .Values.cdc.postgres }}
-{{- $dbConnectorName := lower (printf "%s-%s-%s" $fullName $db.servername $db.dbname) }}
-{{- $dbSlotName := $dbConnectorName | replace "-" "_" }}
+{{- $dbId := required "database id is required" $db.id -}}
+{{- $dbConnectorName := lower (printf "%s-%s-%s" $fullName $dbId $db.dbname) -}}
+{{- $dbSlotName := $dbConnectorName | replace "-" "_" -}}
+{{- $exclude := list -}}
+
+{{- if and (hasKey $db "exclude") (ge (len $db.exclude) 1) -}}
+{{- $exclude := concat $exclude $db.exclude -}}
+{{- end -}}
+
+{{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) -}}
+{{- $exclude := concat $exclude $db.partitions -}}
+{{- end -}}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -20,14 +30,14 @@ spec:
     database.port: "{{ $db.port | default 5432 }}"
     database.user: "${env:POSTGRES_CDC_USER}"
     database.password: "${env:POSTGRES_CDC_PASS}"
-    database.server.name: "{{ $db.servername }}"
+    database.server.name: "{{ $dbId }}"
     database.dbname: "{{ $db.dbname }}"
     snapshot.new.tables: parallel
     slot.name: "{{ $dbSlotName }}"
     plugin.name: pgoutput
     tasks.max: "1"
-    {{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) }}
-    table.exclude.list: "{{- range $i, $p := $db.partitions -}}{{- if $i }},{{- end -}}{{ $p.source }}{{- end }}"
+    {{- if ge (len $exclude) 1 }}
+    table.exclude.list: "{{- range $i, $p := $exclude -}}{{- if $i }},{{- end -}}{{ $p.source }}{{- end }}"
     {{- end }}
     key.converter: io.confluent.connect.avro.AvroConverter
     key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
@@ -41,12 +51,12 @@ spec:
     transforms.reroute.topic.regex: (.*)
     transforms.reroute.topic.replacement: cdc.$1
 
-{{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) }}
-{{- range $partition := $db.partitions }}
-{{- $partitionSource := required "partition source is required" $partition.source }}
-{{- $partitionSink := required "partition sink is required" $partition.sink }}
-{{- $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" }}
-{{- $partitionSlotName := $partitionConnectorName | replace "-" "_" }}
+{{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) -}}
+{{- range $partition := $db.partitions -}}
+{{- $partitionSource := required "partition source is required" $partition.source -}}
+{{- $partitionSink := required "partition sink is required" $partition.sink -}}
+{{- $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" -}}
+{{- $partitionSlotName := $partitionConnectorName | replace "-" "_" -}}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -62,7 +72,7 @@ spec:
     database.port: "{{ $db.port | default 5432 }}"
     database.user: "${env:POSTGRES_CDC_USER}"
     database.password: "${env:POSTGRES_CDC_PASS}"
-    database.server.name: "{{ $db.servername }}"
+    database.server.name: "{{ $dbId }}"
     database.dbname: "{{ $db.dbname }}"
     snapshot.new.tables: parallel
     slot.name: {{ $partitionSlotName }}

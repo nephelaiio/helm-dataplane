@@ -15,7 +15,7 @@ cdc:
   #  postgres:
   #    - hostname: "network.hostname"
   #      port: 5432
-  #      servername: "host.identifier"
+  #      id: "dbId"
   #      dbname: "sourcedb"
   #      signaling: "signaling_table"
   #      partitions:
