@@ -3,18 +3,22 @@
 {{- $registryPort := .Values.registry.service.port -}}
 
 {{- range $db := .Values.cdc.postgres }}
-{{- $dbId := required "database id is required" $db.id -}}
-{{- $dbConnectorName := lower (printf "%s-%s-%s" $fullName $dbId $db.dbname) -}}
-{{- $dbSlotName := $dbConnectorName | replace "-" "_" -}}
-{{- $exclude := list -}}
+{{-   $dbId := required "database id is required" $db.id }}
+{{-   $dbConnectorName := lower (printf "%s-%s-%s" $fullName $dbId $db.dbname) }}
+{{-   $dbSlotName := $dbConnectorName | replace "-" "_" }}
+{{-   $exclude := list }}
 
-{{- if and (hasKey $db "exclude") (ge (len $db.exclude) 1) -}}
-{{- $exclude := concat $exclude $db.exclude -}}
-{{- end -}}
+{{-   if and (hasKey $db "exclude") (ge (len $db.exclude) 1) }}
+{{-     range $item := $db.exclude }}
+{{-       $exclude = append $exclude $item }}
+{{-     end }}
+{{-   end }}
 
-{{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) -}}
-{{- $exclude := concat $exclude $db.partitions -}}
-{{- end -}}
+{{-   if and (hasKey $db "partitions") (ge (len $db.partitions) 1) -}}
+{{-     range $item := $db.partitions }}
+{{-       $exclude = append $exclude $item.source }}
+{{-     end }}
+{{-   end }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -37,7 +41,7 @@ spec:
     plugin.name: pgoutput
     tasks.max: "1"
     {{- if ge (len $exclude) 1 }}
-    table.exclude.list: "{{- range $i, $p := $exclude -}}{{- if $i }},{{- end -}}{{ $p.source }}{{- end }}"
+    table.exclude.list: "{{- range $i, $p := $exclude -}}{{- if $i }},{{- end -}}{{ $p }}{{- end }}"
     {{- end }}
     key.converter: io.confluent.connect.avro.AvroConverter
     key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
@@ -51,12 +55,12 @@ spec:
     transforms.reroute.topic.regex: (.*)
     transforms.reroute.topic.replacement: cdc.$1
 
-{{- if and (hasKey $db "partitions") (ge (len $db.partitions) 1) -}}
-{{- range $partition := $db.partitions -}}
-{{- $partitionSource := required "partition source is required" $partition.source -}}
-{{- $partitionSink := required "partition sink is required" $partition.sink -}}
-{{- $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" -}}
-{{- $partitionSlotName := $partitionConnectorName | replace "-" "_" -}}
+{{-   if and (hasKey $db "partitions") (ge (len $db.partitions) 1) }}
+{{-     range $partition := $db.partitions }}
+{{-       $partitionSource := required "partition source is required" $partition.source }}
+{{-       $partitionSink := required "partition sink is required" $partition.sink }}
+{{-       $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" }}
+{{-       $partitionSlotName := $partitionConnectorName | replace "-" "_" }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -90,8 +94,8 @@ spec:
     transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
     transforms.reroute.topic.regex: "^([^\\.]+)\\.([^\\.]+)\\..*"
     transforms.reroute.topic.replacement: "cdc.$1.$2.{{ $partitionSink }}"
-{{- end }}
-{{- end }}
+{{-     end }}
+{{-   end }}
 {{- end }}
 
 ---

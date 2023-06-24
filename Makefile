@@ -147,6 +147,9 @@ strimzi-connector-restart: wait
 		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
 		curl -s -XPOST http://localhost:8083/connectors/\{\}/tasks/0/restart 2>/dev/null
 
+template:
+	helm template $(PWD)/charts/dataplane --values values.minimal.yml --namespace $(DATAPLANE_NS) --debug
+
 dataplane:
 	@:
 

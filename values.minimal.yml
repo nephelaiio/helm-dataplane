@@ -1,0 +1,28 @@
+---
+metabase:
+  admin:
+      email: metabase@nephelai.io
+      password: dataplane
+  ingress:
+      enabled: true
+      className: nginx-private
+      hostName: metabase.nephelai.io
+cdc:
+  postgres:
+    - hostname: pagilahost
+      port: 5432
+      id: pagila
+      dbname: pagila
+      signaling: True
+strimzi:
+  connect:
+    secret: "metabase-pagila-db"
+  kafka:
+    storage:
+      class: standard
+  zookeeper:
+    storage:
+      class: standard
+zalando:
+  metabase:
+    class: standard

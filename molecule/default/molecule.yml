@@ -93,6 +93,8 @@ provisioner:
                   id: pagila
                   dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
+                  exclude:
+                    - "staff"
                   partitions:
                     - source: "public.payment.*"
                       sink: "payment"

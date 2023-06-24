@@ -25,59 +25,32 @@ This is an example values definition for replicating pagila db:
 
 ```
 metabase:
-    admin:
-        email: metabase@nephelai.io
-        password: dataplane
-    ingress:
-        enabled: true
-        className: nginx-private
-        hostName: pagiladb
-    passwordComplexity: weak
+  admin:
+      email: metabase@nephelai.io
+      password: dataplane
+  ingress:
+      enabled: true
+      className: nginx-private
+      hostName: metabase.nephelai.io
 cdc:
-    postgres:
-        - hostname: pagilahost
-            port: 5432
-            id: pagila
-            dbname: pagila
-            signaling: True
-            partitions:
-                - source: "public.payment.*"
-                    sink: "payment"
+  postgres:
+    - hostname: pagilahost
+      port: 5432
+      id: pagila
+      dbname: pagila
+      signaling: True
 strimzi:
-    secret: "test-pagila-readwrite"
-    config:
-        acks: all
-        config.storage.replication.factor: 3
-        offset.storage.replication.factor: 3
-        status.storage.replication.factor: 3
-    kafka:
-    replicas: 3
-    brokers: 3
+  connect:
+    secret: "metabase-pagila-db"
+  kafka:
     storage:
-        size: 10Gi
-        class: standard
-    config:
-        offsets.topic.replication.factor: 3
-        transaction.state.log.replication.factor: 3
-        transaction.state.log.min.isr: 3
-        num.partitions: 3
-        default.replication.factor: 3
-        min.insync.replicas: 2
-    zookeeper:
+      class: standard
+  zookeeper:
     storage:
-        size: 10Gi
-        class: standard
+      class: standard
 zalando:
-    metabase:
-    ins tances: 1
-        loadBalancer: true
-        allowedSourceRanges: 0.0.0.0/0
-        class: standard
-    warehouse:
-        instances: 1
-        loadBalancer: true
-        allowedSourceRanges: 0.0.0.0/0
-        class: standard
+  metabase:
+    class: standard
 ```
 
 ## Roadmap
