@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dataplane"
-version = "0.1.12"
+version = "0.1.13"
 description = ""
 authors = ["Teodoro Cook <teodoro.cook@gmail.com>"]
 

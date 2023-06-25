@@ -1,9 +1,11 @@
 # nephelaiio.dataplane
 
-A helm chart to deploy a CDC replication stack integrating the following components
+A helm chart to deploy a set of CDC replication connectors to create a data lake from a set of distributed databases
+
+Deployment integrates the following components
+* Metabase Data Reporting
 * Strimzi Kafka Broker
 * Zalando PostgreSQL Data Warehouse
-* Metabase Data Reporting
 * Strimzi Kafka Connect cluster
 * Strimzi Kafka Schema Registry
 * Strimzi Kafka Connect PostgreSQL sink
@@ -17,13 +19,47 @@ helm repo update
 helm install dataplane/dataplane
 ```
 
-## TODO
+## Values
+
+This is an example values definition for replicating pagila db:
+
+```
+metabase:
+  admin:
+      email: metabase@nephelai.io
+      password: dataplane
+  ingress:
+      enabled: true
+      className: nginx-private
+      hostName: metabase.nephelai.io
+cdc:
+  postgres:
+    - hostname: pagilahost
+      port: 5432
+      id: pagila
+      dbname: pagila
+      signaling: True
+strimzi:
+  connect:
+    secret: "metabase-pagila-db"
+  kafka:
+    storage:
+      class: standard
+  zookeeper:
+    storage:
+      class: standard
+zalando:
+  metabase:
+    class: standard
+```
+
+## Roadmap
 In order of priority
-* Add support for partitioned PostgreSQL tables
+* Create python package for maintenance operations
+* Create and publish Topic Reroute transform
 * Add support for MySQL sources
-* Add config options for warehouse backups
 * Add monitoring for Kafka topics
-* Add table exclude support for cdc connectors
+* Add Opendistro deployment
 
 ## Dependencies
 Chart depends on the following cluster levels components being deployed in the target cluster
@@ -36,7 +72,7 @@ Chart depends on the following cluster levels components being deployed in the t
 Cluster dependencies are provisioned with role [nephelaiio.k8s](https://github.com/nephelaiio/ansible-role-k8s) in testing environment
 
 ## Testing
-Testing is performed using molecule against a local single-node kind cluster using Github Actions and can be replicated locally for the latest supported cluster version using the following commands:
+Testing is performed using molecule against a local cluster using Github Actions and can be replicated locally for the latest supported cluster version using the following commands:
 
 ``` sh
 ./bin/test
