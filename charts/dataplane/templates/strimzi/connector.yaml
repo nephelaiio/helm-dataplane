@@ -7,6 +7,16 @@
 {{-   $dbConnectorName := lower (printf "%s-%s-%s" $fullName $dbId $db.dbname) }}
 {{-   $dbSlotName := $dbConnectorName | replace "-" "_" }}
 {{-   $exclude := list }}
+{{-   $include := list }}
+
+{{-   if and (hasKey $db "exclude") (hasKey $db "include") }}
+{{-     fail "table excludes and includes are mutually exclusive"  }}
+{{-   end }}
+
+{{-   if and (hasKey $db "partitions") (hasKey $db "include") }}
+{{-     fail "table partitions and includes are mutually exclusive"  }}
+{{-   end }}
+
 
 {{-   if hasKey $db "exclude" }}
 {{-     if ge (len $db.exclude) 1 }}
@@ -132,4 +142,4 @@ spec:
     transforms.unwrap.delete.handling.mode: rewrite
     transforms.rename.type: org.apache.kafka.connect.transforms.RegexRouter
     transforms.rename.regex: "^cdc\\.([^\\.]*)\\.([^\\.]*)\\.([^\\.]*)"
-    transforms.rename.replacement: "$1_$3"
+    transforms.rename.replacement: "$1_$2_$3"
