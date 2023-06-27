@@ -94,10 +94,10 @@ provisioner:
                   dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
                   exclude:
-                    - "public\\.staff"
-                    - "debezium\\..*"
+                    - "public.staff"
+                    - "debezium.*"
                   partitions:
-                    - source: "public\\.payment\\.*"
+                    - source: "public.payment.*"
                       sink: "payment"
             strimzi:
               connect:
