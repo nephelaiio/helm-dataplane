@@ -95,6 +95,7 @@ provisioner:
                   signaling: "{{ dataplane_pagila_signaling }}"
                   exclude:
                     - "public.staff"
+                    - "debezium.*"
                   partitions:
                     - source: "public.payment.*"
                       sink: "payment"
