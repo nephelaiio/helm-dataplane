@@ -10,10 +10,11 @@ util:
     tag: dataplane-0.1.15
   resources: {}
 
+replication:
+  slot:
+    drop: false
+
 cdc:
-  replication:
-    slot:
-      drop: false
   postgres: []
   #  postgres:
   #    - hostname: "network.hostname"

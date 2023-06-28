@@ -60,7 +60,7 @@ spec:
     database.server.name: "{{ $dbId }}"
     snapshot.new.tables: parallel
     slot.name: "{{ $dbSlotName }}"
-    slot.drop.on.stop: {{ .Values.cdc.replication.slot.drop }}
+    slot.drop.on.stop: {{ .Values.replication.slot.drop }}
     plugin.name: pgoutput
     tasks.max: "1"
     {{- if ge (len $exclude) 1 }}
@@ -108,7 +108,7 @@ spec:
     database.server.name: "{{ $dbId }}-{{ $partition.sink }}"
     snapshot.new.tables: parallel
     slot.name: {{ $partitionSlotName }}
-    slot.drop.on.stop: {{ .Values.cdc.replication.slot.drop }}
+    slot.drop.on.stop: {{ .Values.replication.slot.drop }}
     plugin.name: pgoutput
     tasks.max: "1"
     table.include.list: "{{ $partitionSource }}"
