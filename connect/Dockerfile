@@ -1,4 +1,4 @@
-FROM confluentinc/cp-kafka-connect:7.2.2 as cp
+FROM confluentinc/cp-kafka-connect:7.4.0 as cp
 RUN confluent-hub install --no-prompt debezium/debezium-connector-postgresql:1.9.6
 RUN confluent-hub install --no-prompt confluentinc/kafka-connect-avro-converter:7.2.2
 RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.6.0

@@ -17,11 +17,18 @@
 {{-     fail "table partitions and includes are mutually exclusive"  }}
 {{-   end }}
 
-
 {{-   if hasKey $db "exclude" }}
 {{-     if ge (len $db.exclude) 1 }}
 {{-       range $item := $db.exclude }}
 {{-         $exclude = append $exclude $item }}
+{{-       end }}
+{{-     end }}
+{{-   end }}
+
+{{-   if hasKey $db "include" }}
+{{-     if ge (len $db.include) 1 }}
+{{-       range $item := $db.include }}
+{{-         $include = append $include $item }}
 {{-       end }}
 {{-     end }}
 {{-   end }}
@@ -49,14 +56,17 @@ spec:
     database.port: "{{ $db.port | default 5432 }}"
     database.user: "${env:POSTGRES_CDC_USER}"
     database.password: "${env:POSTGRES_CDC_PASS}"
-    database.server.name: "{{ $dbId }}"
     database.dbname: "{{ $db.dbname }}"
+    database.server.name: "{{ $dbId }}"
     snapshot.new.tables: parallel
     slot.name: "{{ $dbSlotName }}"
     plugin.name: pgoutput
     tasks.max: "1"
     {{- if ge (len $exclude) 1 }}
     table.exclude.list: "{{- range $i, $p := $exclude -}}{{- if $i }},{{- end -}}{{ $p }}{{- end }}"
+    {{- end }}
+    {{- if ge (len $include) 1 }}
+    table.include.list: "{{- range $i, $p := $include -}}{{- if $i }},{{- end -}}{{ $p }}{{- end }}"
     {{- end }}
     key.converter: io.confluent.connect.avro.AvroConverter
     key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
@@ -65,6 +75,7 @@ spec:
     {{- if $db.signaling }}
     signal.data.collection: debezium.signaling
     {{- end }}
+    topic.prefix: "{{ $dbId }}"
     transforms: reroute
     transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
     transforms.reroute.topic.regex: (.*)
@@ -92,8 +103,8 @@ spec:
     database.port: "{{ $db.port | default 5432 }}"
     database.user: "${env:POSTGRES_CDC_USER}"
     database.password: "${env:POSTGRES_CDC_PASS}"
-    database.server.name: "{{ $dbId }}"
     database.dbname: "{{ $db.dbname }}"
+    database.server.name: "{{ $dbId }}-{{ $partition.sink }}"
     snapshot.new.tables: parallel
     slot.name: {{ $partitionSlotName }}
     plugin.name: pgoutput
@@ -106,10 +117,11 @@ spec:
     {{- if $db.signaling }}
     signal.data.collection: debezium.signaling
     {{- end }}
+    topic.prefix: "{{ $dbId }}"
     transforms: reroute
     transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
     transforms.reroute.topic.regex: "^([^\\.]+)\\.([^\\.]+)\\..*"
-    transforms.reroute.topic.replacement: "cdc.$1.$2.{{ $partitionSink }}"
+    transforms.reroute.topic.replacement: "cdc.{{ $dbId }}.$2.{{ $partitionSink }}"
 {{-       end }}
 {{-     end }}
 {{-   end }}
