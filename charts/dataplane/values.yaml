@@ -7,10 +7,13 @@ util:
   image:
     repository: nephelaiio/dataplane-util
     pullPolicy: IfNotPresent
-    tag: dataplane-0.1.14
+    tag: dataplane-0.1.15
   resources: {}
 
 cdc:
+  replication:
+    slot:
+      drop: false
   postgres: []
   #  postgres:
   #    - hostname: "network.hostname"
@@ -45,7 +48,7 @@ strimzi:
   connect:
     image:
       repository: nephelaiio/dataplane-connect
-      tag: dataplane-0.1.14
+      tag: dataplane-0.1.15
     replicas: 1
     config:
       group.id: connect-cluster
@@ -100,7 +103,7 @@ metabase:
     image:
       repository: nephelaiio/dataplane-util
       pullPolicy: IfNotPresent
-      tag: dataplane-0.1.14
+      tag: dataplane-0.1.15
     securityContext: {}
 
   image:

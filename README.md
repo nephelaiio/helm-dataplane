@@ -55,11 +55,10 @@ zalando:
 
 ## Roadmap
 In order of priority
-* Create python package for maintenance operations
-* Create and publish Topic Reroute transform
+
+* Create python package for maintenance/troubleshooting operations
+* Add Elasticsearch sink and datastore
 * Add support for MySQL sources
-* Add monitoring for Kafka topics
-* Add Opendistro deployment
 
 ## Dependencies
 Chart depends on the following cluster levels components being deployed in the target cluster
