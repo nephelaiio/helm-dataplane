@@ -111,7 +111,10 @@ wait:
 strimzi: strimzi-topics
 
 strimzi-topics:
-	make --no-print-directory kubectl exec -- -it pod/$(DATAPLANE_CHART)-strimzi-kafka-0 -n $(DATAPLANE_NS) -- "/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list"
+	make --no-print-directory kubectl exec -- \
+		-it pod/$(DATAPLANE_CHART)-strimzi-kafka-0 \
+		-n $(DATAPLANE_NS) -- \
+		"/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list"
 
 strimzi-connectors:
 	@make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \

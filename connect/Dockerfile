@@ -1,7 +1,7 @@
 FROM confluentinc/cp-kafka-connect:7.2.2 as cp
-RUN confluent-hub install --no-prompt debezium/debezium-connector-postgresql:1.9.6
-RUN confluent-hub install --no-prompt confluentinc/kafka-connect-avro-converter:7.2.2
-RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.6.0
+RUN confluent-hub install --no-prompt debezium/debezium-connector-postgresql:2.2.1
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-avro-converter:7.4.0
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.7.3
 
 FROM quay.io/strimzi/kafka:latest-kafka-3.2.3
 ENV KAFKA_CONNECT_PLUGIN_PATH=/home/kafka/connect-plugins

@@ -99,6 +99,13 @@ provisioner:
                   partitions:
                     - source: "public.payment.*"
                       sink: "payment"
+                - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+                  port: 5432
+                  id: include
+                  dbname: "{{ dataplane_pagila_db }}"
+                  signaling: "{{ dataplane_pagila_signaling }}"
+                  include:
+                    - "public.staff"
             strimzi:
               connect:
                 image:

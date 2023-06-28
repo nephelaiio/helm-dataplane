@@ -109,7 +109,7 @@
 
         - name: verify sink database table names
           block:
-            - name: verify warehouse tables
+            - name: verify warehouse pagila tables
               community.postgresql.postgresql_query:
                 db: warehouse
                 query: |
@@ -119,23 +119,38 @@
                 login_host: "{{ warehouse_host }}"
               vars:
                 warehouse_tables_expected: "{{ pagila_target_tables | map('map_format', 'pagila_public_%s') | list }}"
+                warehouse_tables_pagila: "{{ warehouse_tables_found | select('match', '^pagila_.*') }}"
+                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^include_.*') }}"
                 warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
               register: warehouse_table_query
               retries: 20
               delay: 30
               until:
-                - warehouse_tables_expected | difference(warehouse_tables_found) | length == 0
-                - warehouse_tables_found | difference(warehouse_tables_expected) | length == 0
+                - warehouse_tables_expected | difference(warehouse_tables_pagila) | length == 0
+                - warehouse_tables_pagila | difference(warehouse_tables_expected) | length == 0
+                - warehouse_tables_include == ['include_public_staff']
 
           rescue:
-            - name: debug table mismatches
+            - name: debug pagila table mismatches
               ansible.builtin.debug:
                 msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
               vars:
                 warehouse_tables_expected: "{{ pagila_target_tables| map('map_format', 'pagila_public_%s') | list }}"
+                warehouse_tables_pagila: "{{ warehouse_tables_found | select('match', '^pagila_.*') }}"
                 warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
-                warehouse_tables_diff_expected: "{{ warehouse_tables_expected | difference(warehouse_tables_found) }}"
-                warehouse_tables_diff_found: "{{ warehouse_tables_found | difference(warehouse_tables_expected) }}"
+                warehouse_tables_diff_expected: "{{ warehouse_tables_expected | difference(warehouse_tables_pagila) }}"
+                warehouse_tables_diff_found: "{{ warehouse_tables_pagila | difference(warehouse_tables_expected) }}"
+                warehouse_tables_diff: "{{ warehouse_tables_diff_expected + warehouse_tables_diff_found }}"
+
+            - name: debug include table mismatches
+              ansible.builtin.debug:
+                msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
+              vars:
+                warehouse_tables_expected: ['include_public_staff']
+                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^pagila_.*') }}"
+                warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
+                warehouse_tables_diff_expected: "{{ warehouse_tables_expected | difference(warehouse_tables_include) }}"
+                warehouse_tables_diff_found: "{{ warehouse_tables_include | difference(warehouse_tables_expected) }}"
                 warehouse_tables_diff: "{{ warehouse_tables_diff_expected + warehouse_tables_diff_found }}"
 
             - name: fail verification
@@ -161,7 +176,7 @@
           ansible.builtin.set_fact:
             warehouse_data: "{{ warehouse_data_query.results | list_to_dict('item') }}"
 
-        - name: verify warehouse table data
+        - name: verify warehouse pagila table data
           ansible.builtin.fail:
             msg: >-
               warehouse data for table {{ source_table }} is incomplete,
@@ -174,6 +189,20 @@
           loop_control:
             label: "{{ source_table }}"
           loop: "{{ (pagila_target_tables | list) }}"
+          when: source_table_records > warehouse_table_records
+
+        - name: verify warehouse include table data
+          ansible.builtin.fail:
+            msg: >-
+              warehouse data for table {{ source_table }} is incomplete,
+              {{ warehouse_table_records }}/{{ source_table_records }} found"
+          vars:
+            warehouse_table_records: "{{ (warehouse_data[warehouse_table].query_result | list)[0].count }}"
+            warehouse_table: "include_public_{{ item }}"
+            source_table: "{{ item }}"
+            source_table_records: "{{ (pagila_data[source_table].query_result | list)[0].count }}"
+          loop:
+            - "staff"
           when: source_table_records > warehouse_table_records
 
     - name: verify metabase app database
