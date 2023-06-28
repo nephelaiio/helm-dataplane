@@ -1,6 +1,7 @@
 {{- $fullName := include "dataplane.strimzi.connect.fullname" . }}
 {{- $registryName := include "dataplane.registry.fullname" . }}
 {{- $registryPort := .Values.registry.service.port }}
+{{- $replSlotDrop := .Values.replication.slot.drop }}
 
 {{- range $db := .Values.cdc.postgres }}
 {{-   $dbId := required "database id is required" $db.id }}
@@ -60,7 +61,7 @@ spec:
     database.server.name: "{{ $dbId }}"
     snapshot.new.tables: parallel
     slot.name: "{{ $dbSlotName }}"
-    slot.drop.on.stop: {{ .Values.replication.slot.drop }}
+    slot.drop.on.stop: {{ $replSlotDrop }}
     plugin.name: pgoutput
     tasks.max: "1"
     {{- if ge (len $exclude) 1 }}
@@ -108,7 +109,7 @@ spec:
     database.server.name: "{{ $dbId }}-{{ $partition.sink }}"
     snapshot.new.tables: parallel
     slot.name: {{ $partitionSlotName }}
-    slot.drop.on.stop: {{ .Values.replication.slot.drop }}
+    slot.drop.on.stop: {{ $replSlotDrop }}
     plugin.name: pgoutput
     tasks.max: "1"
     table.include.list: "{{ $partitionSource }}"
