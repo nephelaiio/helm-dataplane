@@ -26,19 +26,21 @@ This is an example values definition for replicating pagila db:
 ```
 metabase:
   admin:
-      email: metabase@nephelai.io
-      password: dataplane
+    email: metabase@nephelai.io
   ingress:
-      enabled: true
-      className: nginx-private
-      hostName: metabase.nephelai.io
+    enabled: true
+    className: nginx-private
+    hostName: metabase.nephelai.io
 cdc:
   postgres:
     - hostname: pagilahost
-      port: 5432
       id: pagila
       dbname: pagila
-      signaling: True
+      exclude:
+        - "public.staff"
+      partitions:
+        - source: "public.payment.*"
+          sink: "payment"
 strimzi:
   connect:
     secret: "metabase-pagila-db"

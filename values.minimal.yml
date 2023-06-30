@@ -1,12 +1,11 @@
 ---
 metabase:
   admin:
-      email: metabase@nephelai.io
-      password: dataplane
+    email: metabase@nephelai.io
   ingress:
-      enabled: true
-      className: nginx-private
-      hostName: metabase.nephelai.io
+    enabled: true
+    className: nginx-private
+    hostName: metabase.nephelai.io
 cdc:
   postgres:
     - hostname: pagilahost
