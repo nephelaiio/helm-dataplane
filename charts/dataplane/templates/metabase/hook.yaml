@@ -60,7 +60,7 @@ spec:
             - >-
               set -ex
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
-              retries=12;
+              retries=10;
               until \
                 curl -s \
                   -H "X-Forwarded-Host: $MB_SITE_URL" \
@@ -69,14 +69,14 @@ spec:
                 echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
                 if (( retries > 0 )); then
                   retries=$(( retries - 1 ));
-                  sleep 10;
+                  sleep 30;
                 else
                   echo "[$(date -Iseconds)] [ERROR] [metabase-setup] metabase service failed to start";
                   exit 1;
                 fi
               done;
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] retrieve metabase setup token";
-              retries=12;
+              retries=10;
               until [[ ${setup_token:-""} != "" ]]; do
                 setup_token=$(curl -s -X GET \
                   -H "X-Forwarded-Host: $MB_SITE_URL" \
@@ -84,7 +84,7 @@ spec:
                   http://{{ $svcName }}:{{ $svcPort }}/api/session/properties | jq '.["setup-token"]' -r);
                 if (( retries > 0 )); then
                   retries=$(( retries - 1 ));
-                  sleep 10;
+                  sleep 30;
                 else
                   echo "[$(date -Iseconds)] [ERROR] [metabase-setup] unable to retrieve metabase setup token";
                   exit 1;
