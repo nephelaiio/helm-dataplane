@@ -55,7 +55,7 @@ spec:
                   key: password
 
           command:
-            - "sh"
+            - "bash"
             - "-c"
             - >-
               set -ex
@@ -135,7 +135,7 @@ spec:
                   http://{{ $svcName }}:{{ $svcPort }}/api/setup);
                   response_code=$(cat $response_header | grep ^HTTP | awk '{print $2}');
                   if (( retries > 0 )); then
-                    retries=$(( $retries - 1 ));
+                    retries=$(( retries - 1 ));
                   else
                     echo "[$(date -Iseconds)] [ERROR] [metabase-setup] unable to initialize metabase";
                     exit 1;
