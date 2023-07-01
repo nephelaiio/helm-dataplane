@@ -4,7 +4,7 @@
 
 {{- range $db := .Values.cdc.postgres }}
 {{-   $dbId := required "database id is required" $db.id }}
-{{-   $dbConnectorName := lower (printf "%s-%s-%s" $fullName $dbId $db.dbname) }}
+{{-   $dbConnectorName := lower (printf "%s-%s" $fullName $dbId) }}
 {{-   $dbSlotName := $dbConnectorName | replace "-" "_" }}
 {{-   $exclude := list }}
 {{-   $include := list }}

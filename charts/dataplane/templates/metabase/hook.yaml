@@ -55,31 +55,46 @@ spec:
                   key: password
 
           command:
-            - "sh"
+            - "bash"
             - "-c"
             - >-
               set -ex
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
+              retries=10;
               until \
                 curl -s \
                   -H "X-Forwarded-Host: $MB_SITE_URL" \
                   -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
                   http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
                 echo "[$(date -Iseconds)] [INFO] [metabase-setup] waiting for metabase service";
-                sleep 10;
+                if (( retries > 0 )); then
+                  retries=$(( retries - 1 ));
+                  sleep 30;
+                else
+                  echo "[$(date -Iseconds)] [ERROR] [metabase-setup] metabase service failed to start";
+                  exit 1;
+                fi
               done;
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] retrieve metabase setup token";
+              retries=10;
               until [[ ${setup_token:-""} != "" ]]; do
                 setup_token=$(curl -s -X GET \
                   -H "X-Forwarded-Host: $MB_SITE_URL" \
                   -H "X-Forwarded-Proto: $MB_SITE_PROTO" \
                   http://{{ $svcName }}:{{ $svcPort }}/api/session/properties | jq '.["setup-token"]' -r);
+                if (( retries > 0 )); then
+                  retries=$(( retries - 1 ));
+                  sleep 30;
+                else
+                  echo "[$(date -Iseconds)] [ERROR] [metabase-setup] unable to retrieve metabase setup token";
+                  exit 1;
+                fi
               done;
               retries=10;
               response_code="";
               echo "[$(date -Iseconds)] [INFO] [metabase-setup] initial metabase setup start";
               response_header=$(mktemp);
-              until [[ "$response_code" == "200" || "$response_code" == "403" || "$retries" == "0" ]]; do
+              until [[ "$response_code" == "200" || "$response_code" == "403" ]]; do
                 response_body=$(curl -s -D $response_header -X POST \
                   -H "Content-Type: application/json" \
                   -H "X-Forwarded-Host: $MB_SITE_URL" \
@@ -119,7 +134,12 @@ spec:
                   }" \
                   http://{{ $svcName }}:{{ $svcPort }}/api/setup);
                   response_code=$(cat $response_header | grep ^HTTP | awk '{print $2}');
-                  retries=$(($retries - 1));
+                  if (( retries > 0 )); then
+                    retries=$(( retries - 1 ));
+                  else
+                    echo "[$(date -Iseconds)] [ERROR] [metabase-setup] unable to initialize metabase";
+                    exit 1;
+                  fi
                   if [[ "$response_code" != "200" && "$response_code" != "403" ]]; then
                     echo "$response_body (response_code=$response_code)";
                     sleep 30;

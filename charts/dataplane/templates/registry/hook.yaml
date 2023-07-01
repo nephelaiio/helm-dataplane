@@ -24,7 +24,7 @@ spec:
           resources:
             {{- toYaml .Values.util.resources | nindent 12 }}
           command:
-            - "sh"
+            - "bash"
             - "-c"
             - >-
               until curl -s http://{{ $svcName }}:{{ $svcPort }}/ -o /dev/null; do
