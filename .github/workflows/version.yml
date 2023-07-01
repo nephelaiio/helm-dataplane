@@ -1,0 +1,26 @@
+---
+name: version
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Verify Changed files
+        uses: tj-actions/verify-changed-files@v16
+        id: check
+        with:
+          files: |
+            charts/dataplane/Chart.yaml
+            pyproject.toml
+
+      - name: Fail if version has not been updated
+        if: steps.check.outputs.files_changed == 'true'
+        run: exit 1
