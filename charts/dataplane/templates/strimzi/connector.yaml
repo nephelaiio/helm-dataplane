@@ -4,10 +4,15 @@
 
 {{- range $db := .Values.cdc.postgres }}
 {{-   $dbId := required "database id is required" $db.id }}
-{{-   $dbConnectorName := lower (printf "%s-%s" $fullName $dbId) }}
 {{-   $dbSlotName := $dbConnectorName | replace "-" "_" }}
 {{-   $exclude := list }}
 {{-   $include := list }}
+
+{{-   if hasKey $db "connector" }}
+{{-     $dbConnectorName := lower $db.connector | replace "." "-" }}
+{{-   else}}
+{{-     $dbConnectorName := lower $dbId | replace "." "-" }}
+{{-   end}}
 
 {{-   if and (hasKey $db "exclude") (hasKey $db "include") }}
 {{-     fail "table excludes and includes are mutually exclusive"  }}
