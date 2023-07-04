@@ -158,19 +158,19 @@
 
         - name: validate kafka connector name
           ansible.builtin.fail:
-            msg: "connector dataplane-connector was not fuond"
+            msg: "connector dataplane-connector was not found"
           vars:
-            connector_matches: "{{ connector_query | selectattr('metadata.name', 'equalto', 'dataplane-connector') | length }}"
+            connector_matches: "{{ connector_query | selectattr('metadata.name', 'equalto', 'pagila-connector') | length }}"
+            connector_present: "{{ connector_matches | int > 0 }}"
             connector_query: "{{
               query(
                 'kubernetes.core.k8s',
+                api_version='',
                 kind='KafkaConnector',
                 kubeconfig=k8s_kubeconfig
               ) }}"
-          retries: 10
-          delay: 30
-          until: connector_matches > 0
-          failed_when: connector_matches == 0
+          until: connector_present
+          failed_when: not connector_present
 
         - name: wait for cdc to complete
           pause:

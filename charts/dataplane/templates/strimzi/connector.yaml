@@ -8,10 +8,7 @@
 {{-   $exclude := list }}
 {{-   $include := list }}
 
-{{-   $dbConnector := $dbId }}
-{{-   if hasKey $db "connector" }}
-{{-     $dbConnector := $db.connector }}
-{{-   end}}
+{{-   $dbConnector := $db.connector | default $dbId }}
 {{-   $dbConnectorName := lower $dbConnector | replace "." "-" }}
 
 {{-   if and (hasKey $db "exclude") (hasKey $db "include") }}

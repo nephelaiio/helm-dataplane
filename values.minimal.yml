@@ -9,6 +9,7 @@ metabase:
 cdc:
   postgres:
     - hostname: pagilahost
+      connector: pagila-connector
       id: pagila
       dbname: pagila
       exclude:
