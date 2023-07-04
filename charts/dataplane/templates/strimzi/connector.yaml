@@ -92,7 +92,8 @@ spec:
 {{-         $partitionSource := required "partition source is required" $partition.source }}
 {{-         $partitionSink := required "partition sink is required" $partition.sink }}
 {{-         $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" }}
-{{-         $partitionSlotName :=  lower (printf "%s-%s" $dbSlotName $partitionSink) | replace "." "-" }}
+{{-         $partitionSlot :=  lower (printf "%s_%s" $dbSlotName $partitionSink) }}
+{{-         $partitionSlotName :=  $partitionSlot | replace "." "-" | replace "-" "_" }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
