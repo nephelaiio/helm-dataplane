@@ -34,6 +34,7 @@ metabase:
 cdc:
   postgres:
     - hostname: pagilahost
+      connector: pagila-connector
       id: pagila
       dbname: pagila
       exclude:
@@ -54,6 +55,10 @@ zalando:
   metabase:
     class: standard
 ```
+
+The following fields are immutable; modifying them will leave an orphan DB replication slot and _will_ result in space exhaustion:
+* `cdc.postgres[*].id`
+* `cdc.postgres[*].partitions[*].sink`
 
 ## Roadmap
 In order of priority

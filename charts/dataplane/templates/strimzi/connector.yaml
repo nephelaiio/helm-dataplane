@@ -4,10 +4,12 @@
 
 {{- range $db := .Values.cdc.postgres }}
 {{-   $dbId := required "database id is required" $db.id }}
-{{-   $dbConnectorName := lower (printf "%s-%s" $fullName $dbId) }}
-{{-   $dbSlotName := $dbConnectorName | replace "-" "_" }}
+{{-   $dbSlotName := lower $dbId | replace "." "-" }}
 {{-   $exclude := list }}
 {{-   $include := list }}
+
+{{-   $dbConnector := $db.connector | default $dbId }}
+{{-   $dbConnectorName := lower $dbConnector | replace "." "-" }}
 
 {{-   if and (hasKey $db "exclude") (hasKey $db "include") }}
 {{-     fail "table excludes and includes are mutually exclusive"  }}
@@ -87,7 +89,8 @@ spec:
 {{-         $partitionSource := required "partition source is required" $partition.source }}
 {{-         $partitionSink := required "partition sink is required" $partition.sink }}
 {{-         $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" }}
-{{-         $partitionSlotName := $partitionConnectorName | replace "-" "_" }}
+{{-         $partitionSlot :=  lower (printf "%s_%s" $dbSlotName $partitionSink) }}
+{{-         $partitionSlotName :=  $partitionSlot | replace "." "-" | replace "-" "_" }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
@@ -131,7 +134,7 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
-  name: {{ $fullName }}-warehouse-sink
+  name: {{ $fullName }}-warehouse-postgresql
   labels:
     strimzi.io/cluster: {{ $fullName }}
 spec:
