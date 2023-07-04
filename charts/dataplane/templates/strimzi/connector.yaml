@@ -8,10 +8,9 @@
 {{-   $exclude := list }}
 {{-   $include := list }}
 
+{{-   $dbConnector := $dbId }}
 {{-   if hasKey $db "connector" }}
 {{-     $dbConnector := $db.connector }}
-{{-   else}}
-{{-     $dbConnector := $dbId }}
 {{-   end}}
 {{-   $dbConnectorName := lower $dbConnector | replace "." "-" }}
 
@@ -137,7 +136,7 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
-  name: {{ $fullName }}-warehouse-sink
+  name: {{ $fullName }}-warehouse-postgresql
   labels:
     strimzi.io/cluster: {{ $fullName }}
 spec:
