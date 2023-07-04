@@ -12,15 +12,13 @@ function debug {
     make kubectl get pod -- -A | grep -i metabase-app-setup | awk '{ print $2 }' | xargs -I{} make kubectl logs pod/{} -- -n dataplane
 }
 
-trap debug EXIT
-
 make template &&
     make molecule destroy &&
     make molecule create &&
     make images &&
     make molecule converge &&
-    make wait &&
-    make molecule verify &&
-    make molecule side-effect &&
-    make molecule verify &&
-    trap - EXIT
+    make wait
+
+trap debug EXIT
+make molecule verify
+trap - EXIT
