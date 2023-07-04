@@ -66,6 +66,7 @@ provisioner:
           dataplane_chart: dataplane
           dataplane_path: ${MOLECULE_PROJECT_DIRECTORY}
           dataplane_metabase_hostname: "metabase.{{ k8s_cluster_name }}"
+          dataplane_pagila_connector_name: pagila-connector
           dataplane_chart_values:
             util:
               image:
@@ -91,7 +92,7 @@ provisioner:
                 - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                   port: 5432
                   id: pagila
-                  connector: pagila-connector
+                  connector: "{{ dataplane_pagila_connector_name }}"
                   dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
                   exclude:

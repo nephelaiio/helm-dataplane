@@ -61,6 +61,7 @@ spec:
     database.dbname: "{{ $db.dbname }}"
     database.server.name: "{{ $dbId }}"
     snapshot.new.tables: parallel
+    snapshot.mode: {{ $db.snapshot_mode | default "initial" }}
     slot.name: "{{ $dbSlotName }}"
     plugin.name: pgoutput
     tasks.max: "1"
@@ -109,6 +110,7 @@ spec:
     database.dbname: "{{ $db.dbname }}"
     database.server.name: "{{ $dbId }}-{{ $partition.sink }}"
     snapshot.new.tables: parallel
+    snapshot.mode: {{ $db.snapshot_mode | default "initial" }}
     slot.name: {{ $partitionSlotName }}
     plugin.name: pgoutput
     tasks.max: "1"
@@ -147,6 +149,8 @@ spec:
     tasks.max: "1"
     topics.regex: "cdc.(.*)"
     auto.create: true
+    pk.mode: "record_key"
+    pk.fields: ""
     key.converter: io.confluent.connect.avro.AvroConverter
     key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
     value.converter: io.confluent.connect.avro.AvroConverter
