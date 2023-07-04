@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   dataplane:
   - apiVersion: v2
+    appVersion: 0.1.17
+    created: "2023-07-04T23:55:28.577535008Z"
+    description: A Helm chart to deploy and configure Dataplane
+    digest: 27b3891088251a882c21117a13d72cae5c88fe05fbc92c0e12003a483b8e4410
+    name: dataplane
+    type: application
+    urls:
+    - https://github.com/nephelaiio/helm-dataplane/releases/download/dataplane-0.1.17/dataplane-0.1.17.tgz
+    version: 0.1.17
+  - apiVersion: v2
     appVersion: 0.1.16
     created: "2023-07-04T15:32:46.024776692Z"
     description: A Helm chart to deploy and configure Dataplane
@@ -151,4 +161,4 @@ entries:
     urls:
     - https://github.com/nephelaiio/helm-dataplane/releases/download/dataplane-0.0.6/dataplane-0.0.6.tgz
     version: 0.0.6
-generated: "2023-07-04T15:32:46.024991793Z"
+generated: "2023-07-04T23:55:28.577756415Z"
