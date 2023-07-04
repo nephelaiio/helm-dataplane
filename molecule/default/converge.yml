@@ -124,56 +124,6 @@
           kind='Secret',
           kubeconfig=k8s_kubeconfig) }}"
 
-    - name: query pagila publications
-      community.postgresql.postgresql_query:
-        db: "{{ dataplane_pagila_db }}"
-        query: "SELECT * FROM pg_publication where pubname = 'dbz_publication'"
-        login_user: "{{ pagila_owner_user }}"
-        login_password: "{{ pagila_owner_pass }}"
-        login_host: "{{ pagila_host }}"
-      register: pagila_publication_query
-
-    - name: create pagila publication
-      community.postgresql.postgresql_query:
-        db: "{{ dataplane_pagila_db }}"
-        query: "CREATE PUBLICATION dbz_publication FOR ALL TABLES"
-        login_user: "{{ pagila_owner_user }}"
-        login_password: "{{ pagila_owner_pass }}"
-        login_host: "{{ pagila_host }}"
-      when: pagila_publication_query.query_all_results | flatten | length == 0
-
-    - name: deploy dataplane helm chart
-      kubernetes.core.helm:
-        state: present
-        name: "{{ dataplane_chart }}"
-        chart_ref: "{{ dataplane_path }}/charts/dataplane"
-        release_namespace: "{{ dataplane_namespace }}"
-        create_namespace: true
-        force: true
-        wait: false
-        timeout: 30m
-        kubeconfig: "{{ k8s_kubeconfig }}"
-        binary_path: "{{ k8s_helm_bin }}"
-        values: "{{ dataplane_chart_values }}"
-
-    - name: wait for database cluster startup
-      ansible.builtin.fail:
-        msg: "zalando clusters failed to come up on time"
-      vars:
-        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') | map(attribute='metadata.name') }}"
-        cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
-        cluster_query: "{{ query(
-          'kubernetes.core.k8s',
-          api_version='acid.zalan.do/v1',
-          kind='postgresql',
-          kubeconfig=k8s_kubeconfig) }}"
-      retries: 15
-      delay: 30
-      until: cluster_failed | length == 0
-      failed_when:
-        - (cluster_status | length) != (cluster_query | length)
-        - cluster_failed | length > 0
-
     - name: query pagila connection data
       ansible.builtin.set_fact:
         pagila_user: "{{ _db_secret_data.data.username | b64decode }}"
@@ -192,7 +142,7 @@
         host: "{{ pagila_host }}"
         port: 5432
 
-    - name: create database
+    - name: create pagila database
       community.postgresql.postgresql_db:
         name: "{{ dataplane_pagila_db }}"
         state: present
@@ -241,3 +191,53 @@
             state: absent
             path: "{{ datadir.path }}"
           changed_when: false
+
+    - name: query pagila publications
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "SELECT * FROM pg_publication where pubname = 'dbz_publication'"
+        login_user: "{{ pagila_owner_user }}"
+        login_password: "{{ pagila_owner_pass }}"
+        login_host: "{{ pagila_host }}"
+      register: pagila_publication_query
+
+    - name: create pagila publication
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "CREATE PUBLICATION dbz_publication FOR ALL TABLES"
+        login_user: "{{ pagila_owner_user }}"
+        login_password: "{{ pagila_owner_pass }}"
+        login_host: "{{ pagila_host }}"
+      when: pagila_publication_query.query_all_results | flatten | length == 0
+
+    - name: deploy dataplane helm chart
+      kubernetes.core.helm:
+        state: present
+        name: "{{ dataplane_chart }}"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
+        release_namespace: "{{ dataplane_namespace }}"
+        create_namespace: true
+        force: true
+        wait: false
+        timeout: 30m
+        kubeconfig: "{{ k8s_kubeconfig }}"
+        binary_path: "{{ k8s_helm_bin }}"
+        values: "{{ dataplane_chart_values }}"
+
+    - name: wait for database cluster startup
+      ansible.builtin.fail:
+        msg: "zalando clusters failed to come up on time"
+      vars:
+        cluster_failed: "{{ cluster_status | rejectattr('status.PostgresClusterStatus', 'equalto', 'Running') }}"
+        cluster_status: "{{ cluster_query | selectattr('status', 'defined') }}"
+        cluster_query: "{{ query(
+          'kubernetes.core.k8s',
+          api_version='acid.zalan.do/v1',
+          kind='postgresql',
+          kubeconfig=k8s_kubeconfig) }}"
+      retries: 15
+      delay: 30
+      until: cluster_failed | length == 0
+      failed_when:
+        - (cluster_status | length) != (cluster_query | length)
+        - cluster_failed | length > 0
