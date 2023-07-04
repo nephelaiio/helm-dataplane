@@ -4,15 +4,16 @@
 
 {{- range $db := .Values.cdc.postgres }}
 {{-   $dbId := required "database id is required" $db.id }}
-{{-   $dbSlotName := $dbConnectorName | replace "-" "_" }}
+{{-   $dbSlotName := lower $dbId | replace "." "-" }}
 {{-   $exclude := list }}
 {{-   $include := list }}
 
 {{-   if hasKey $db "connector" }}
-{{-     $dbConnectorName := lower $db.connector | replace "." "-" }}
+{{-     $dbConnector := $db.connector }}
 {{-   else}}
-{{-     $dbConnectorName := lower $dbId | replace "." "-" }}
+{{-     $dbConnector := $dbId }}
 {{-   end}}
+{{-   $dbConnectorName := lower $dbConnector | replace "." "-" }}
 
 {{-   if and (hasKey $db "exclude") (hasKey $db "include") }}
 {{-     fail "table excludes and includes are mutually exclusive"  }}
@@ -92,7 +93,7 @@ spec:
 {{-         $partitionSource := required "partition source is required" $partition.source }}
 {{-         $partitionSink := required "partition sink is required" $partition.sink }}
 {{-         $partitionConnectorName := lower (printf "%s-%s" $dbConnectorName $partitionSink) | replace "." "-" }}
-{{-         $partitionSlotName := $partitionConnectorName | replace "-" "_" }}
+{{-         $partitionSlotName :=  lower (printf "%s-%s" $dbSlotName $partitionSink) | replace "." "-" }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
