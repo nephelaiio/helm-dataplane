@@ -6,15 +6,12 @@
   gather_facts: true
 
   vars:
-
     extra_table: languages
 
   roles:
-
     - nephelaiio.plugins
 
   tasks:
-
     - name: query pagila connection data
       ansible.builtin.set_fact:
         pagila_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
@@ -24,10 +21,10 @@
         pagila_db_secret_data: "{{ secret_query | selectattr('metadata.name', 'equalto', pagila_db_secret_name) | first }}"
         secret_query: "{{
           query(
-            'kubernetes.core.k8s',
-            namespace=dataplane_pagila_namespace,
-            kind='Secret',
-            kubeconfig=k8s_kubeconfig
+          'kubernetes.core.k8s',
+          namespace=dataplane_pagila_namespace,
+          kind='Secret',
+          kubeconfig=k8s_kubeconfig
           )}}"
 
     - name: query pagila service data
@@ -38,10 +35,10 @@
         pagila_db_svc_data: "{{ service_query | selectattr('metadata.name', 'equalto', pagila_db_svc_name) | first }}"
         service_query: "{{
           query(
-            'kubernetes.core.k8s',
-            namespace=dataplane_pagila_namespace,
-            kind='Service',
-            kubeconfig=k8s_kubeconfig
+          'kubernetes.core.k8s',
+          namespace=dataplane_pagila_namespace,
+          kind='Service',
+          kubeconfig=k8s_kubeconfig
           )}}"
 
     - name: create pagila debezium signal schema
@@ -79,6 +76,15 @@
       community.postgresql.postgresql_query:
         db: "{{ dataplane_pagila_db }}"
         query: "CREATE TABLE {{ extra_table }} AS TABLE language"
+        login_user: "{{ pagila_user }}"
+        login_password: "{{ pagila_pass }}"
+        login_host: "{{ pagila_host }}"
+      when: extra_table not in pagila_data_tables
+
+    - name: create  primary key for pagila data table
+      community.postgresql.postgresql_query:
+        db: "{{ dataplane_pagila_db }}"
+        query: "ALTER TABLE {{ extra_table }} ADD PRIMARY KEY(language_id)"
         login_user: "{{ pagila_user }}"
         login_password: "{{ pagila_pass }}"
         login_host: "{{ pagila_host }}"

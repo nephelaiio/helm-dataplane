@@ -11,6 +11,10 @@ util:
   resources: {}
 
 cdc:
+  sink:
+    config:
+      pk.mode: "record_key"
+      pk.fields: ""
   postgres: []
   #  postgres:
   #    - hostname: "network.hostname"
