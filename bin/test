@@ -20,5 +20,7 @@ make template &&
     make wait
 
 trap debug EXIT
-make molecule verify
+make molecule verify &&
+    make molecule side-effect &&
+    make molecule verify
 trap - EXIT
