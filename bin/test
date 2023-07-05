@@ -8,7 +8,6 @@ function debug {
     make kubectl get pod -- -n dataplane -o name | grep connector-restart | xargs -I{} make kubectl describe {} -- -n dataplane
     make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl describe {} -- -n dataplane
     make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl logs {} -- -n dataplane
-    make warehouse -- -c "'\dt'"
     make kubectl get pod -- -A | grep -i metabase-app-setup | awk '{ print $2 }' | xargs -I{} make kubectl logs pod/{} -- -n dataplane
 }
 
@@ -17,10 +16,7 @@ make template &&
     make molecule create &&
     make images &&
     make molecule converge &&
-    make wait
-
-trap debug EXIT
-make molecule verify &&
+    make wait &&
+    make molecule verify &&
     make molecule side-effect &&
     make molecule verify
-trap - EXIT
