@@ -81,15 +81,6 @@
         login_host: "{{ pagila_host }}"
       when: extra_table not in pagila_data_tables
 
-    - name: create  primary key for pagila data table
-      community.postgresql.postgresql_query:
-        db: "{{ dataplane_pagila_db }}"
-        query: "ALTER TABLE {{ extra_table }} ADD PRIMARY KEY(language_id)"
-        login_user: "{{ pagila_user }}"
-        login_password: "{{ pagila_pass }}"
-        login_host: "{{ pagila_host }}"
-      when: extra_table not in pagila_data_tables
-
     - name: create pagila debezium signal table
       community.postgresql.postgresql_table:
         db: "{{ dataplane_pagila_db }}"

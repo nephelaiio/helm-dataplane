@@ -13,7 +13,7 @@ util:
 cdc:
   sink:
     config:
-      pk.mode: "record_key"
+      pk.mode: "none"
       pk.fields: ""
   postgres: []
   #  postgres:
