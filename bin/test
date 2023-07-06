@@ -5,20 +5,22 @@ function debug {
     make kubectl get all -- -n dataplane
     make strimzi-connector-trace
     make strimzi-connector-status
-    make kubectl get pod -- -n dataplane -o name | grep connector-restart | xargs -I{} make kubectl describe {} -- -n dataplane
-    make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl describe {} -- -n dataplane
-    make kubectl get jobs -- -n dataplane -o name | xargs -I{} make kubectl logs {} -- -n dataplane
-    make warehouse -- -c "'\dt'"
-    make kubectl get pod -- -A | grep -i metabase-app-setup | awk '{ print $2 }' | xargs -I{} make kubectl logs pod/{} -- -n dataplane
+    make kubectl describe svc/dataplane-connect-api -- -n dataplane
+    make kubectl logs svc/dataplane-connect-api -- -n dataplane
+    make kubectl describe job/dataplane-registry-connector-restart -- -n dataplane
+    make kubectl logs job/dataplane-registry-connector-restart -- -n dataplane
+    make kubectl describe job/dataplane-metabase-app-setup -- -n dataplane
+    make kubectl logs job/dataplane-metabase-app-setup -- -n dataplane
 }
 
-make template &&
+trap debug EXIT
+make template >/dev/null 2>&1 &&
     make molecule destroy &&
     make molecule create &&
-    make images &&
+    make images >/dev/null 2>&1 &&
     make molecule converge &&
-    make wait
-
-trap debug EXIT
-make molecule verify
+    make wait &&
+    make molecule verify &&
+    make molecule side-effect &&
+    make molecule verify
 trap - EXIT

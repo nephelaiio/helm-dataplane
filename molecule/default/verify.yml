@@ -119,8 +119,8 @@
                 login_host: "{{ warehouse_host }}"
               vars:
                 warehouse_tables_expected: "{{ pagila_target_tables | map('map_format', 'pagila_public_%s') | list }}"
-                warehouse_tables_pagila: "{{ warehouse_tables_found | select('match', '^pagila_.*') }}"
-                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^include_.*') }}"
+                warehouse_tables_pagila: "{{ warehouse_tables_found | select('match', '^pagila_public_.*') }}"
+                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^include_public_.*') }}"
                 warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
               register: warehouse_table_query
               retries: 20
@@ -146,8 +146,8 @@
               ansible.builtin.debug:
                 msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
               vars:
-                warehouse_tables_expected: ['include_public_staff']
-                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^pagila_.*') }}"
+                warehouse_tables_expected: ["include_public_staff"]
+                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^pagila_public_.*') }}"
                 warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
                 warehouse_tables_diff_expected: "{{ warehouse_tables_expected | difference(warehouse_tables_include) }}"
                 warehouse_tables_diff_found: "{{ warehouse_tables_include | difference(warehouse_tables_expected) }}"
@@ -164,10 +164,10 @@
             connector_present: "{{ connector_matches | int > 0 }}"
             connector_query: "{{
               query(
-                'kubernetes.core.k8s',
-                api_version='',
-                kind='KafkaConnector',
-                kubeconfig=k8s_kubeconfig
+              'kubernetes.core.k8s',
+              api_version='',
+              kind='KafkaConnector',
+              kubeconfig=k8s_kubeconfig
               ) }}"
           until: connector_present
           failed_when: not connector_present
