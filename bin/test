@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 function debug {
     make kubectl get all -- -n dataplane
@@ -12,14 +13,14 @@ function debug {
     make kubectl logs job/dataplane-metabase-app-setup -- -n dataplane
 }
 
-make template &&
+trap debug EXIT
+make template >/dev/null 2>&1 &&
     make molecule destroy &&
     make molecule create &&
-    make images &&
+    make images >/dev/null 2>&1 &&
     make molecule converge &&
     make wait &&
     make molecule verify &&
     make molecule side-effect &&
     make molecule verify
-
-debug
+trap - EXIT
