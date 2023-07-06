@@ -152,7 +152,6 @@ spec:
     {{- with .Values.cdc.sink.config }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
-    pk.mode: {{ .Values.cdc.sink.pk_mode }}
     key.converter: io.confluent.connect.avro.AvroConverter
     key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
     value.converter: io.confluent.connect.avro.AvroConverter
