@@ -56,7 +56,7 @@ jobs:
           python-version: '3.x'
 
       - name: install package prerequisites
-        run: apt-get install -y postgresql-common libpq-dev
+        run: sudo apt-get install -y postgresql-common libpq-dev
 
       - name: install poetry
         run: pip3 install poetry
