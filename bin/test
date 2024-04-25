@@ -15,12 +15,7 @@ function debug {
 
 trap debug EXIT
 make template >/dev/null 2>&1 &&
-    make destroy &&
-    make create &&
+    make destroy create &&
     make images >/dev/null 2>&1 &&
-    make converge &&
-    make wait &&
-    make verify &&
-    make side-effect &&
-    make verify
+    make converge wait verify side-effect verify
 trap - EXIT

@@ -1,9 +1,9 @@
 ---
 roles:
-  - nephelaiio.plugins
   - nephelaiio.kind
   - nephelaiio.k8s
   - geerlingguy.helm
 collections:
+  - nephelaiio.plugins
   - community.general
   - community.postgresql

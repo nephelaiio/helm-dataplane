@@ -113,7 +113,8 @@
                 login_password: "{{ warehouse_pass }}"
                 login_host: "{{ warehouse_host }}"
               vars:
-                warehouse_tables_expected: "{{ pagila_target_tables | map('map_format', 'pagila_public_%s') | list }}"
+                map_format: 'nephelaiio.plugins.map_format'
+                warehouse_tables_expected: "{{ pagila_target_tables | map(map_format, 'pagila_public_%s') | list }}"
                 warehouse_tables_pagila: "{{ warehouse_tables_found | select('match', '^pagila_public_.*') }}"
                 warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^include_public_.*') }}"
                 warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
@@ -130,7 +131,8 @@
               ansible.builtin.debug:
                 msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
               vars:
-                warehouse_tables_expected: "{{ pagila_target_tables| map('map_format', 'pagila_public_%s') | list }}"
+                map_format: 'nephelaiio.plugins.map_format'
+                warehouse_tables_expected: "{{ pagila_target_tables| map(map_format, 'pagila_public_%s') | list }}"
                 warehouse_tables_pagila: "{{ warehouse_tables_found | select('match', '^pagila_.*') }}"
                 warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
                 warehouse_tables_diff_expected: "{{ warehouse_tables_expected | difference(warehouse_tables_pagila) }}"

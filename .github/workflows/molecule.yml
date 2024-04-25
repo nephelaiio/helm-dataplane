@@ -61,7 +61,7 @@ jobs:
         run: sudo apt-get install -y make
 
       - name: Run molecule tests
-        run: ./bin/test
+        run: make test
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
