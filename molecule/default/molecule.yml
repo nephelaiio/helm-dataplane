@@ -6,10 +6,10 @@ dependency:
     requirements-file: requirements.yml
 
 platforms:
-  - name: localhost
+  - name: Localhost
 
 driver:
-  name: delegated
+  name: default
 
 provisioner:
   name: ansible

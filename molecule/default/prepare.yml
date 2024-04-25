@@ -1,20 +1,15 @@
 ---
-- name: prepare
-
+- name: Prepare
   hosts: localhost
-
   gather_facts: false
-
   vars:
     k8s_deploy: true
     k8s_verify: false
-
   roles:
     - nephelaiio.plugins
     - nephelaiio.k8s
-
   tasks:
-    - name: install postgresql binary
+    - name: Install PostgreSQL binary
       ansible.builtin.package:
         name: postgresql-client
       become: yes

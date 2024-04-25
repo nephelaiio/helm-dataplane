@@ -1,50 +1,40 @@
 ---
-# This workflow requires a GALAXY_API_KEY secret present in the GitHub
-# repository or organization.
-#
-# See: https://github.com/marketplace/actions/publish-ansible-role-to-galaxy
-# See: https://github.com/ansible/galaxy/issues/46
-
 name: docker
-on:
 
+on:
   push:
     tags:
       - "*"
 
 jobs:
-
   docker:
-
     name: publish docker images
     runs-on: ubuntu-latest
-
     steps:
-
-      - name: update package cache
+      - name: Update package cache
         run: sudo apt-get update
 
-      - name: set up quemu
-        uses: docker/setup-qemu-action@v2
+      - name: Set up quemu
+        uses: docker/setup-qemu-action@v3
 
-      - name: set up docker buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: login to docker hub
-        uses: docker/login-action@v2
+      - name: Login to docker hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
-      - name: build and push connect image
-        uses: docker/build-push-action@v3
+      - name: Build and push connect image
+        uses: docker/build-push-action@v5
         with:
           context: "{{defaultContext}}:connect"
           push: true
           tags: nephelaiio/dataplane-connect:latest,nephelaiio/dataplane-connect:${{  github.ref_name }}
 
-      - name: build and push util image
-        uses: docker/build-push-action@v3
+      - name: Build and push util image
+        uses: docker/build-push-action@v5
         with:
           context: "{{defaultContext}}:util"
           push: true

@@ -2,7 +2,6 @@
 name: molecule
 
 on:
-
   pull_request:
     branches:
       - master
@@ -10,14 +9,10 @@ on:
     - cron: "55 23 * * 4"
 
 jobs:
-
   molecule:
-
     name: molecule
     runs-on: ubuntu-latest
-
     strategy:
-
       matrix:
         scenario:
           - default
@@ -26,48 +21,46 @@ jobs:
             image: v1.25.8
           - release: v0.18.0
             image: v1.24.12
-
     steps:
-
-      - name: update package cache
+      - name: Update package cache
         run: sudo apt-get update
 
-      - name: check out the codebase.
-        uses: actions/checkout@v3
+      - name: Check out the codebase.
+        uses: actions/checkout@v4
 
-      - name: login to docker hub
-        uses: docker/login-action@v2
+      - name: Login to docker hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
-      - name: install kubectl
+      - name: Install kubectl
         uses: azure/setup-kubectl@v3
 
-      - name: install helm
-        uses: azure/setup-helm@v3
+      - name: Install helm
+        uses: azure/setup-helm@v4
 
-      - name: install helm diff plugin
+      - name: Install helm diff plugin
         run: helm plugin install https://github.com/databus23/helm-diff
 
-      - name: set up python 3
-        uses: actions/setup-python@v4
+      - name: Set up python 3
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name: install package prerequisites
+      - name: Install package prerequisites
         run: sudo apt-get install -y postgresql-common libpq-dev
 
-      - name: install poetry
+      - name: Install poetry
         run: pip3 install poetry
 
-      - name: install dependencies
+      - name: Install dependencies
         run: poetry install
 
-      - name: install make
+      - name: Install make
         run: sudo apt-get install -y make
 
-      - name: run molecule tests
+      - name: Run molecule tests
         run: ./bin/test
         env:
           PY_COLORS: '1'

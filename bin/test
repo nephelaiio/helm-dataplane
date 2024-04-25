@@ -15,12 +15,12 @@ function debug {
 
 trap debug EXIT
 make template >/dev/null 2>&1 &&
-    make molecule destroy &&
-    make molecule create &&
+    make destroy &&
+    make create &&
     make images >/dev/null 2>&1 &&
-    make molecule converge &&
+    make converge &&
     make wait &&
-    make molecule verify &&
-    make molecule side-effect &&
-    make molecule verify
+    make verify &&
+    make side-effect &&
+    make verify
 trap - EXIT

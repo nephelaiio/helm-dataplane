@@ -1,22 +1,14 @@
 ---
-- name: destroy
-
+- name: Destroy
   hosts: localhost
-
   gather_facts: false
-
   vars:
-
     kind_cluster_state: absent
-
   roles:
-
     - nephelaiio.plugins
     - nephelaiio.kind
-
   tasks:
-
-    - name: delete certificate from edge truststore
+    - name: Delete certificate from edge truststore
       ansible.builtin.command: "certutil -d sql:$HOME/.pki/nssdb -D -n {{ k8s_cluster_name }}"
       changed_when: false
       ignore_errors: true

@@ -1,6 +1,4 @@
-##
-# Dataplane Helm chart
-#
+.PHONY: all ${MAKECMDGOALS}
 
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
@@ -38,42 +36,73 @@ DOCKER_REGISTRY ?= localhost:$$(yq eval '.provisioner.inventory.hosts.all.vars.k
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 
-TARGETS = test poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images wait strimzi strimzi-topics strimzi-connectors strimzi-connector-status strimzi-connector-trace strimzi-connector-restart
-
-.PHONY: $(TARGETS)
-
 test:
 	./bin/test
 
-clean:
+dependency create prepare converge idempotence side-effect verify destroy cleanup reset list:
+	KIND_RELEASE=$(KIND_RELEASE) \
+	KIND_IMAGE=$(KIND_IMAGE) \
+	poetry run molecule $@ -s $(SCENARIO)
+
+purge:
 	@echo cleaning ansible cache
 	if [ -d $(HOME)/.cache/ansible-compat/ ]; then \
 		find $(HOME)/.cache/ansible-compat/ -mindepth 2 -maxdepth 2 -type d -name "roles" | xargs -r rm -rf; \
 	fi ;
 
-molecule: clean poetry
-	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $(filter-out $(TARGETS),$(MAKECMDGOALS)) -s $(SCENARIO)
+clean: destroy reset purge
+	@poetry env remove $$(which python) >/dev/null 2>&1 || exit 0
+
+ifeq (run,$(firstword $(MAKECMDGOALS)))
+    RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 run:
-	$(EPHEMERAL_DIR)/bwrap $(filter-out $@,$(MAKECMDGOALS))
+	$(EPHEMERAL_DIR)/bwrap ${RUN_ARGS}
+
+ifeq (helm,$(firstword $(MAKECMDGOALS)))
+    HELM_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 helm:
-	KUBECONFIG=$(EPHEMERAL_DIR)/config helm $(filter-out $@,$(MAKECMDGOALS))
+	KUBECONFIG=$(EPHEMERAL_DIR)/config helm ${HELM_ARGS}
+
+ifeq (kubectl,$(firstword $(MAKECMDGOALS)))
+    KUBECTL_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 kubectl:
-	@KUBECONFIG=$(EPHEMERAL_DIR)/config kubectl $(filter-out $@,$(MAKECMDGOALS))
+	@KUBECONFIG=$(EPHEMERAL_DIR)/config kubectl ${KUBECTL_ARGS}
 
 poetry:
 	@poetry install --no-root
 
+ifeq (pagila,$(firstword $(MAKECMDGOALS)))
+    PAGILA_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
+
 pagila:
-	@PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) -d $(PAGILA_DB) $(filter-out $@,$(MAKECMDGOALS))
+	@PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) -d $(PAGILA_DB) ${PAGILA_ARGS}
+
+ifeq (metabase,$(firstword $(MAKECMDGOALS)))
+    METABASE_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 metabase:
-	@PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) -d $(METABASE_DB) $(filter-out $@,$(MAKECMDGOALS))
+	@PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) -d $(METABASE_DB) ${METABASE_ARGS}
+
+ifeq (warehouse,$(firstword $(MAKECMDGOALS)))
+    WAREHOUSE_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 warehouse:
-	@PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) -d $(WAREHOUSE_DB) $(filter-out $@,$(MAKECMDGOALS))
+	@PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) -d $(WAREHOUSE_DB) ${WAREHOUSE_ARGS}
 
 images: dataplane-connect dataplane-util
 	docker image prune --force; \
@@ -152,11 +181,3 @@ strimzi-connector-restart: wait
 
 template:
 	helm template $(PWD)/charts/dataplane --values values.minimal.yml --namespace $(DATAPLANE_NS) --debug
-
-dataplane:
-	@:
-
-%:
-	@:
-
-# end

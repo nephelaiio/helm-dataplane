@@ -1,22 +1,18 @@
 ---
-- name: create
-
+- name: Create
   hosts: localhost
-
   gather_facts: false
-
   roles:
     - nephelaiio.plugins
-
   pre_tasks:
-    - name: deploy kind cluster
+    - name: Deploy Kind cluster
       ansible.builtin.include_role:
         name: nephelaiio.kind
 
-    - name: set helm release metadata
+    - name: Set Helm release metadata
       when: helm_release is not defined
       block:
-        - name: query helm releases
+        - name: Query Helm releases
           ansible.builtin.uri:
             url: https://api.github.com/repos/helm/helm/releases/latest
             headers: "{{ _headers }}"
@@ -27,26 +23,26 @@
             _headers: "{{ _header_auth if _token != '' else {} }}"
           register: helm_release_query
 
-        - name: set kind release target
+        - name: Set Kind release target
           ansible.builtin.set_fact:
             helm_release: "{{ helm_release_query.json.tag_name }}"
 
       rescue:
-        - name: set kind release to failback
+        - name: Set Kind release to failback
           ansible.builtin.set_fact:
             helm_release: v3.11.3
 
   tasks:
-    - name: create temporary directory
+    - name: Create temporary directory
       ansible.builtin.tempfile:
         state: directory
         prefix: kind
       register: _tmpdir
       changed_when: false
 
-    - name: install helm binary
+    - name: Install Helm binary
       block:
-        - name: download helm release package
+        - name: Download Helm release package
           ansible.builtin.unarchive:
             src: "https://get.helm.sh/helm-{{ helm_release }}-linux-amd64.tar.gz"
             dest: "{{ _tmpdir.path }}"
@@ -57,7 +53,7 @@
           until: helm_dl_op is success
           changed_when: false
 
-        - name: find helm executable
+        - name: Find Helm executable
           ansible.builtin.find:
             paths: "{{ _tmpdir.path }}"
             file_type: file
@@ -67,19 +63,19 @@
               - "^helm$"
           register: helm_bin
 
-        - name: copy helm executable
+        - name: Copy Helm executable
           ansible.builtin.copy:
             src: "{{ helm_bin.files[0].path }}"
             dest: "{{ k8s_helm_bin }}"
             mode: "0755"
 
       always:
-        - name: cleanup temp files
+        - name: Cleanup temp files
           ansible.builtin.file:
             state: absent
             path: "{{ _tmpdir.path }}"
 
-    - name: install helm diff plugin
+    - name: Install Helm diff plugin
       kubernetes.core.helm_plugin:
         plugin_path: https://github.com/databus23/helm-diff
         state: present

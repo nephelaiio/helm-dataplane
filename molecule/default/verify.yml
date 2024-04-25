@@ -1,10 +1,7 @@
 ---
-- name: verify
-
+- name: Verify
   hosts: localhost
-
   gather_facts: false
-
   vars:
     k8s_deploy: false
     k8s_verify: "{{ lookup('ansible.builtin.env', 'K8S_VERIFY', default='true') | bool }}"
@@ -13,16 +10,14 @@
     k8s_zalando_verify: false
     k8s_volume_verify: false
     verify_pagila_user: postgres
-
   roles:
-    - name: nephelaiio.plugins
-    - name: nephelaiio.k8s
-
+    - name: Nephelaiio.plugins
+    - name: Nephelaiio.k8s
   tasks:
-    - name: verify dataplane sink database
+    - name: Verify dataplane sink database
       when: lookup('ansible.builtin.env', 'CDC_VERIFY', default='true') | bool
       block:
-        - name: query pagila connection data
+        - name: Query pagila connection data
           ansible.builtin.set_fact:
             pagila_user: "{{ _db_secret_data.data.username | b64decode }}"
             pagila_pass: "{{ _db_secret_data.data.password | b64decode }}"
@@ -36,7 +31,7 @@
               kind='Secret',
               kubeconfig=k8s_kubeconfig) }}"
 
-        - name: query pagila service data
+        - name: Query pagila service data
           ansible.builtin.set_fact:
             pagila_host: "{{ _db_svc_data.status.loadBalancer.ingress[0].ip }}"
           vars:
@@ -49,7 +44,7 @@
               kind='Service',
               kubeconfig=k8s_kubeconfig) }}"
 
-        - name: query pagila tables
+        - name: Query pagila tables
           community.postgresql.postgresql_query:
             db: "{{ dataplane_pagila_db }}"
             query: |
@@ -59,14 +54,14 @@
             login_host: "{{ pagila_host }}"
           register: pagila_table_query
 
-        - name: record source table data
+        - name: Record source table data
           ansible.builtin.set_fact:
             pagila_all_tables: "{{ _table_names | list }}"
             pagila_target_tables: "{{ _table_names | reject('regex', '^payment_.*') | reject('regex', '^staff') }}"
           vars:
             _table_names: "{{ pagila_table_query.query_result | map(attribute='table_name') }}"
 
-        - name: query pagila table data
+        - name: Query pagila table data
           community.postgresql.postgresql_query:
             db: "{{ dataplane_pagila_db }}"
             query: "SELECT count(*) from {{ item }}"
@@ -76,11 +71,11 @@
           loop: "{{ pagila_all_tables }}"
           register: pagila_data_query
 
-        - name: record pagila table data
+        - name: Record pagila table data
           ansible.builtin.set_fact:
             pagila_data: "{{ pagila_data_query.results | list_to_dict('item') }}"
 
-        - name: query warehouse connection data
+        - name: Query warehouse connection data
           ansible.builtin.set_fact:
             warehouse_user: "{{ _db_secret_data.data.username | b64decode }}"
             warehouse_pass: "{{ _db_secret_data.data.password | b64decode }}"
@@ -94,7 +89,7 @@
               kind='Secret',
               kubeconfig=k8s_kubeconfig) }}"
 
-        - name: query warehouse service data
+        - name: Query warehouse service data
           ansible.builtin.set_fact:
             warehouse_host: "{{ _db_svc_data.status.loadBalancer.ingress[0].ip }}"
           vars:
@@ -107,9 +102,9 @@
               kind='Service',
               kubeconfig=k8s_kubeconfig) }}"
 
-        - name: verify sink database table names
+        - name: Verify sink database table names
           block:
-            - name: verify warehouse pagila tables
+            - name: Verify warehouse pagila tables
               community.postgresql.postgresql_query:
                 db: warehouse
                 query: |
@@ -131,7 +126,7 @@
                 - warehouse_tables_include == ['include_public_staff']
 
           rescue:
-            - name: debug pagila table mismatches
+            - name: Debug pagila table mismatches
               ansible.builtin.debug:
                 msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
               vars:
@@ -142,7 +137,7 @@
                 warehouse_tables_diff_found: "{{ warehouse_tables_pagila | difference(warehouse_tables_expected) }}"
                 warehouse_tables_diff: "{{ warehouse_tables_diff_expected + warehouse_tables_diff_found }}"
 
-            - name: debug include table mismatches
+            - name: Debug include table mismatches
               ansible.builtin.debug:
                 msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
               vars:
@@ -153,10 +148,10 @@
                 warehouse_tables_diff_found: "{{ warehouse_tables_include | difference(warehouse_tables_expected) }}"
                 warehouse_tables_diff: "{{ warehouse_tables_diff_expected + warehouse_tables_diff_found }}"
 
-            - name: fail verification
+            - name: Fail verification
               ansible.builtin.fail:
 
-        - name: validate kafka connector name
+        - name: Validate kafka connector name
           ansible.builtin.fail:
             msg: "connector dataplane-connector was not found"
           vars:
@@ -172,11 +167,11 @@
           until: connector_present
           failed_when: not connector_present
 
-        - name: wait for cdc to complete
+        - name: Wait for cdc to complete
           pause:
             minutes: 5
 
-        - name: query warehouse table data
+        - name: Query warehouse table data
           community.postgresql.postgresql_query:
             db: warehouse
             query: "SELECT count(*) from {{ item }}"
@@ -188,11 +183,11 @@
           loop: "{{ warehouse_tables_present }}"
           register: warehouse_data_query
 
-        - name: record warehouse table data
+        - name: Record warehouse table data
           ansible.builtin.set_fact:
             warehouse_data: "{{ warehouse_data_query.results | list_to_dict('item') }}"
 
-        - name: verify warehouse pagila table data
+        - name: Verify warehouse pagila table data
           ansible.builtin.fail:
             msg: >-
               warehouse data for table {{ source_table }} is incomplete,
@@ -207,7 +202,7 @@
           loop: "{{ (pagila_target_tables | list) }}"
           when: source_table_records > warehouse_table_records
 
-        - name: verify warehouse include table data
+        - name: Verify warehouse include table data
           ansible.builtin.fail:
             msg: >-
               warehouse data for table {{ source_table }} is incomplete,
@@ -221,10 +216,10 @@
             - "staff"
           when: source_table_records > warehouse_table_records
 
-    - name: verify metabase app database
+    - name: Verify metabase app database
       when: lookup('ansible.builtin.env', 'METABASE_VERIFY', default='true') | bool
       block:
-        - name: query metabase service data
+        - name: Query metabase service data
           ansible.builtin.set_fact:
             metabase_host: "{{ _svc_data.status.loadBalancer.ingress[0].ip }}"
           vars:
@@ -237,7 +232,7 @@
               kind='Ingress',
               kubeconfig=k8s_kubeconfig) }}"
 
-        - name: query metabase connection data
+        - name: Query metabase connection data
           ansible.builtin.set_fact:
             metabase_user: "{{ dataplane_chart_values.metabase.admin.email }}"
             metabase_pass: "{{ _admin_secret_data.data.password | b64decode }}"
@@ -251,7 +246,7 @@
               kind='Secret',
               kubeconfig=k8s_kubeconfig) }}"
 
-        - name: debug metabase connection data
+        - name: Debug metabase connection data
           ansible.builtin.debug:
             msg: >
               host={{ metabase_host }},
@@ -260,7 +255,7 @@
               password={{ metabase_pass }}"
           ignore_errors: true
 
-        - name: log in to metabase
+        - name: Log in to metabase
           ansible.builtin.uri:
             url: "https://{{ metabase_host }}/api/session"
             method: POST
@@ -274,13 +269,13 @@
             validate_certs: false
           register: metabase_login_query
 
-        - name: record metabase session id
+        - name: Record metabase session id
           ansible.builtin.set_fact:
             metabase_session: "{{ metabase_login_query.json.id }}"
 
-        - name: verify metabase app dbs
+        - name: Verify metabase app DBs
           block:
-            - name: query metabase dbs
+            - name: Query metabase DBs
               ansible.builtin.uri:
                 url: "https://{{ metabase_host }}/api/database/?include=tables"
                 method: GET
@@ -298,7 +293,7 @@
                 - metabase_db_query.json.data | selectattr('name', 'equalto', 'dataplane') | length == 1
 
           rescue:
-            - name: verify sample db deletion
+            - name: Verify sample DB deletion
               ansible.builtin.fail:
                 msg: "Sample databases have not been removed from Metabase"
               vars:
@@ -306,7 +301,7 @@
               when: extra_dbs | length > 0
               ignore_errors: true
 
-            - name: verify metabase db creation
+            - name: Verify metabase DB creation
               ansible.builtin.fail:
                 msg: "Database 'dataplane' has not been registered to Metabase"
               vars:

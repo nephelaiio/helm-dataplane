@@ -7,7 +7,7 @@ util:
   image:
     repository: nephelaiio/dataplane-util
     pullPolicy: IfNotPresent
-    tag: dataplane-0.1.20
+    tag: dataplane-0.1.21
   resources: {}
 
 cdc:
@@ -29,7 +29,7 @@ cdc:
 
 strimzi:
   kafka:
-    version: "3.4.0"
+    version: "3.7.0"
     replicas: 1
     brokers: 1
     annotations: {}

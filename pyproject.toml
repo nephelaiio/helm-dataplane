@@ -1,6 +1,6 @@
 [tool.poetry ]
 name = "dataplane"
-version = "0.1.20"
+version = "0.1.21"
 description = ""
 authors = ["Teodoro Cook <teodoro.cook@gmail.com>"]
 
@@ -9,18 +9,17 @@ dataplane = 'dataplane.cli:cli'
 
 [tool.poetry.dependencies]
 python = "^3.10"
-molecule = "^5.1.0"
-pyyaml = "^6.0.1"
 
 [tool.poetry .group.dev.dependencies]
-docker = "^6.0.0"
-kubernetes = "^24.2.0"
-openshift = "^0.13.1"
+molecule = "^24.2.1"
+ansible = "^9.3.0"
+docker = "^7.0.0"
+kubernetes = "^29.0.0"
+openshift = "^0.13.2"
+pyyaml = "^6.0.1"
 jmespath = "^1.0.1"
-ansible = "^6.7.0"
-netaddr = "^0.8.0"
-MarkupSafe = "2.0.1"
-psycopg2-binary = "^2.9.3"
+netaddr = "^1.2.1"
+psycopg2-binary = "^2.9.9"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
