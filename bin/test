@@ -11,6 +11,7 @@ function debug {
     make kubectl logs job/dataplane-registry-connector-restart -- -n dataplane
     make kubectl describe job/dataplane-metabase-app-setup -- -n dataplane
     make kubectl logs job/dataplane-metabase-app-setup -- -n dataplane
+    exit 1
 }
 
 trap debug EXIT

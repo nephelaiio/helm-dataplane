@@ -2,8 +2,6 @@
 - name: Create
   hosts: localhost
   gather_facts: false
-  roles:
-    - nephelaiio.plugins
   pre_tasks:
     - name: Deploy Kind cluster
       ansible.builtin.include_role:
