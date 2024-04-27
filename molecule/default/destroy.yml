@@ -5,7 +5,6 @@
   vars:
     kind_cluster_state: absent
   roles:
-    - nephelaiio.plugins
     - nephelaiio.kind
   tasks:
     - name: Delete certificate from edge truststore

@@ -2,8 +2,6 @@
 - name: Converge
   hosts: localhost
   gather_facts: false
-  roles:
-    - nephelaiio.plugins
   tasks:
     - name: Wait for strimzi crd deployment
       kubernetes.core.k8s_info:

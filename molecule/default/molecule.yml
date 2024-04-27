@@ -113,7 +113,7 @@ provisioner:
                 image:
                   repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-connect"
                   tag: latest
-                secret: "{{ dataplane_pagila_user }}-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+                secret: "postgres-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                 config:
                   acks: all
                   config.storage.replication.factor: 3

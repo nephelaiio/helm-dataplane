@@ -4,8 +4,6 @@
   gather_facts: true
   vars:
     extra_table: languages
-  roles:
-    - nephelaiio.plugins
   tasks:
     - name: Query pagila connection data
       ansible.builtin.set_fact:

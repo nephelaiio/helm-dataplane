@@ -10,9 +10,6 @@
     k8s_zalando_verify: false
     k8s_volume_verify: false
     verify_pagila_user: postgres
-  roles:
-    - name: Nephelaiio.plugins
-    - name: Nephelaiio.k8s
   tasks:
     - name: Verify dataplane sink database
       when: lookup('ansible.builtin.env', 'CDC_VERIFY', default='true') | bool
@@ -73,7 +70,7 @@
 
         - name: Record pagila table data
           ansible.builtin.set_fact:
-            pagila_data: "{{ pagila_data_query.results | list_to_dict('item') }}"
+            pagila_data: "{{ pagila_data_query.results | nephelaiio.plugins.list_to_dict('item') }}"
 
         - name: Query warehouse connection data
           ansible.builtin.set_fact:
@@ -187,7 +184,7 @@
 
         - name: Record warehouse table data
           ansible.builtin.set_fact:
-            warehouse_data: "{{ warehouse_data_query.results | list_to_dict('item') }}"
+            warehouse_data: "{{ warehouse_data_query.results | nephelaiio.plugins.list_to_dict('item') }}"
 
         - name: Verify warehouse pagila table data
           ansible.builtin.fail:

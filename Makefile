@@ -105,23 +105,15 @@ warehouse:
 	@PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) -d $(WAREHOUSE_DB) ${WAREHOUSE_ARGS}
 
 images: dataplane-connect dataplane-util
-	docker image prune --force; \
+	docker image prune --force && \
 	curl -s http://localhost:$(DOCKER_REGISTRY_PORT)/v2/_catalog | jq
 
-dataplane-init:
-	cd init ; \
-	docker build \
-		--rm \
-		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
-		. ; \
-	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
-
 dataplane-connect:
-	cd connect ; \
+	cd connect && \
 	docker build \
 		--rm \
 		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
-		. ; \
+		. && \
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 dataplane-util:
@@ -133,50 +125,61 @@ dataplane-util:
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 wait:
-	@echo wait for service startup ; \
-	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-registry -- -n $(DATAPLANE_NS) ; \
-	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-connect -- -n $(DATAPLANE_NS) ; \
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	echo wait for service startup && \
+	kubectl rollout status deployment/$(DATAPLANE_CHART)-registry -n $(DATAPLANE_NS) && \
+	kubectl get pod -l "app.kubernetes.io/name=kafka-connect" -n $(DATAPLANE_NS) -o name | \
+		xargs kubectl wait --for=jsonpath='{.status.phase}'=Running -n $(DATAPLANE_NS)
 
 strimzi: strimzi-topics
 
 strimzi-topics:
-	make --no-print-directory kubectl exec -- \
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	kubectl exec \
 		-it pod/$(DATAPLANE_CHART)-strimzi-kafka-0 \
 		-n $(DATAPLANE_NS) -- \
-		"/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list"
+		/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list
 
 strimzi-connectors:
-	@make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	kubectl exec \
+		-it svc/$(DATAPLANE_CHART)-connect-api \
+		-n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors \
 		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
+		| xargs -I{}  kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors/\{\} 2>/dev/null
 
 strimzi-connector-status:
-	@make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	kubectl exec \
+		-it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
+			curl -s http://localhost:8083/connectors \
+	| jq '.[]' -r \
+	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.state) | .[]' -r
 
 strimzi-connector-trace:
-	@make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	kubectl exec \
+		-it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
+	| jq '.[]' -r \
+	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.trace) | .[]' -r
 
 strimzi-connector-restart: wait
 	@echo restart kafka connectors ; \
-	make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
+	export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	kubectl exec -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
+	| jq '.[]' -r \
+	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
 		curl -s -XPOST http://localhost:8083/connectors/\{\}/restart 2>/dev/null ; \
-	make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
+	kubectl exec -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
 		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
+	| jq '.[]' -r \
+	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
 		curl -s -XPOST http://localhost:8083/connectors/\{\}/tasks/0/restart 2>/dev/null
 
 template:

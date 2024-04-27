@@ -6,7 +6,6 @@
     k8s_deploy: true
     k8s_verify: false
   roles:
-    - nephelaiio.plugins
     - nephelaiio.k8s
   tasks:
     - name: Install PostgreSQL binary
