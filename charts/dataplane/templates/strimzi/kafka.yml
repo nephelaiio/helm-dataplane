@@ -2,10 +2,6 @@
 {{- $brokerCount := (int .Values.strimzi.kafka.brokers) }}
 {{- $kafkaAnnotations := .Values.strimzi.kafka.annotations }}
 {{- $externalAnnotations := .Values.strimzi.kafka.listener.external.annotations }}
-{{- $kafkaStorageSize := required "kafka storage size is required" .Values.strimzi.kafka.storage.size }}
-{{- $kafkaStorageClass := required "kafka storage class is required" .Values.strimzi.kafka.storage.class }}
-{{- $zookeeperStorageSize := required "zookeeper storage size is required" .Values.strimzi.zookeeper.storage.size }}
-{{- $zookeeperStorageClass := required "zookeeper storage class is required" .Values.strimzi.zookeeper.storage.class }}
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
@@ -13,14 +9,15 @@ metadata:
   name: {{ include "dataplane.strimzi.kafka.fullname" . }}
   labels:
     {{- include "dataplane.strimzi.labels" . | nindent 4 }}
-  {{- with $kafkaAnnotations }}
   annotations:
+    strimzi.io/kraft: enabled
+    strimzi.io/node-pools: enabled
+  {{- with $kafkaAnnotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   kafka:
     version: {{ .Values.strimzi.kafka.version }}
-    replicas: {{ $replicas }}
     listeners:
       - name: plain
         port: {{ .Values.strimzi.kafka.listener.plain.port }}
@@ -40,30 +37,10 @@ spec:
             annotations:
               {{- toYaml . | nindent 14 }}
             {{- end }}
-          brokers:
-            {{- range $i := until $brokerCount }}
-            - broker: {{ $i }}
-              {{- with $externalAnnotations }}
-              annotations:
-                {{- toYaml . | nindent 16 }}
-              {{- end }}
-            {{- end }}
     {{- with .Values.strimzi.kafka.config }}
     config:
       {{- toYaml . | nindent 6 }}
     {{- end }}
-    storage:
-      type: persistent-claim
-      size: {{ $kafkaStorageSize }}
-      class: {{ $kafkaStorageClass }}
-      deleteClaim: false
-  zookeeper:
-    replicas: {{ .Values.strimzi.zookeeper.replicas }}
-    storage:
-      type: persistent-claim
-      size: {{ $zookeeperStorageSize }}
-      class: {{ $zookeeperStorageClass }}
-      deleteClaim: false
   entityOperator:
     topicOperator: {}
     userOperator: {}

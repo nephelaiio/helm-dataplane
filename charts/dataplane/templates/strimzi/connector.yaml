@@ -3,13 +3,15 @@
 {{- $registryPort := .Values.registry.service.port }}
 
 {{- range $db := .Values.cdc.postgres }}
-{{-   $dbId := required "database id is required" $db.id }}
-{{-   $dbSlotName := lower $dbId | replace "." "-" | replace "-" "_" }}
+{{-   $dbConnector := required "connector name is required" $db.connector }}
+{{-   $dbConnectorName := lower $dbConnector | replace "." "-" }}
+
+{{-   $dbSlot := $db.slot | default $dbConnectorName }}
+{{-   $dbSlotName := lower $dbSlot | replace "." "-" | replace "-" "_" }}
+{{-   $prefix := $db.prefix | default $dbSlot }}
+
 {{-   $exclude := list }}
 {{-   $include := list }}
-
-{{-   $dbConnector := $db.connector | default $dbId }}
-{{-   $dbConnectorName := lower $dbConnector | replace "." "-" }}
 
 {{-   if and (hasKey $db "exclude") (hasKey $db "include") }}
 {{-     fail "table excludes and includes are mutually exclusive"  }}
@@ -43,47 +45,6 @@
 {{-     end }}
 {{-   end }}
 
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaConnector
-metadata:
-  name: {{ $dbConnectorName }}
-  labels:
-    strimzi.io/cluster: {{ $fullName }}
-spec:
-  class: io.debezium.connector.postgresql.PostgresConnector
-  tasksMax: 1
-  config:
-    database.hostname: {{ $db.hostname }}
-    database.port: "{{ $db.port | default 5432 }}"
-    database.user: "${env:POSTGRES_CDC_USER}"
-    database.password: "${env:POSTGRES_CDC_PASS}"
-    database.dbname: "{{ $db.dbname }}"
-    database.server.name: "{{ $dbId }}"
-    snapshot.new.tables: parallel
-    snapshot.mode: {{ $db.snapshot_mode | default "initial" }}
-    slot.name: "{{ $dbSlotName }}"
-    plugin.name: pgoutput
-    tasks.max: "1"
-    {{- if ge (len $exclude) 1 }}
-    table.exclude.list: "{{- range $i, $p := $exclude -}}{{- if $i }},{{- end -}}{{ $p }}{{- end }}"
-    {{- end }}
-    {{- if ge (len $include) 1 }}
-    table.include.list: "{{- range $i, $p := $include -}}{{- if $i }},{{- end -}}{{ $p }}{{- end }}"
-    {{- end }}
-    key.converter: io.confluent.connect.avro.AvroConverter
-    key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
-    value.converter: io.confluent.connect.avro.AvroConverter
-    value.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
-    {{- if $db.signaling }}
-    signal.data.collection: debezium.signaling
-    {{- end }}
-    topic.prefix: "{{ $dbId }}"
-    transforms: reroute
-    transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
-    transforms.reroute.topic.regex: (.*)
-    transforms.reroute.topic.replacement: cdc.$1
-
 {{-   if (hasKey $db "partitions") }}
 {{-     if ge (len $db.partitions) 1 }}
 {{-       range $partition := $db.partitions }}
@@ -102,13 +63,14 @@ metadata:
 spec:
   class: io.debezium.connector.postgresql.PostgresConnector
   tasksMax: 1
+  autoRestart:
+    enabled: true
   config:
     database.hostname: {{ $db.hostname }}
     database.port: "{{ $db.port | default 5432 }}"
     database.user: "${env:POSTGRES_CDC_USER}"
     database.password: "${env:POSTGRES_CDC_PASS}"
     database.dbname: "{{ $db.dbname }}"
-    database.server.name: "{{ $dbId }}-{{ $partition.sink }}"
     snapshot.new.tables: parallel
     snapshot.mode: {{ $db.snapshot_mode | default "initial" }}
     slot.name: {{ $partitionSlotName }}
@@ -122,13 +84,57 @@ spec:
     {{- if $db.signaling }}
     signal.data.collection: debezium.signaling
     {{- end }}
-    topic.prefix: "{{ $dbId }}"
+    topic.prefix: "{{ $prefix }}"
     transforms: reroute
     transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
     transforms.reroute.topic.regex: "^([^\\.]+)\\.([^\\.]+)\\..*"
-    transforms.reroute.topic.replacement: "cdc.{{ $dbId }}.$2.{{ $partitionSink }}"
+    transforms.reroute.topic.replacement: "cdc.{{ $prefix }}.$2.{{ $partitionSink }}"
 {{-       end }}
 {{-     end }}
+{{-   else }}
+
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: {{ $dbConnectorName }}
+  labels:
+    strimzi.io/cluster: {{ $fullName }}
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  tasksMax: 1
+  autoRestart:
+    enabled: true
+  config:
+    database.hostname: {{ $db.hostname }}
+    database.port: "{{ $db.port | default 5432 }}"
+    database.user: "${env:POSTGRES_CDC_USER}"
+    database.password: "${env:POSTGRES_CDC_PASS}"
+    database.dbname: "{{ $db.dbname }}"
+    snapshot.new.tables: parallel
+    snapshot.mode: {{ $db.snapshot_mode | default "initial" }}
+    slot.name: "{{ $dbSlotName }}"
+    plugin.name: pgoutput
+    tasks.max: "1"
+    {{- if ge (len $exclude) 1 }}
+    table.exclude.list: "{{- range $i, $p := $exclude -}}{{- if $i }},{{- end -}}{{ $p }}{{- end }}"
+    {{- end }}
+    {{- if ge (len $include) 1 }}
+    table.include.list: "{{- range $i, $p := $include -}}{{- if $i }},{{- end -}}{{ $p }}{{- end }}"
+    {{- end }}
+    key.converter: io.confluent.connect.avro.AvroConverter
+    key.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
+    value.converter: io.confluent.connect.avro.AvroConverter
+    value.converter.schema.registry.url: http://{{ $registryName }}:{{ $registryPort }}
+    {{- if $db.signaling }}
+    signal.data.collection: debezium.signaling
+    {{- end }}
+    topic.prefix: "{{ $prefix }}"
+    transforms: reroute
+    transforms.reroute.type: io.debezium.transforms.ByLogicalTableRouter
+    transforms.reroute.topic.regex: (.*)
+    transforms.reroute.topic.replacement: cdc.$1
+
 {{-   end }}
 {{- end }}
 
@@ -136,12 +142,14 @@ spec:
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
-  name: {{ $fullName }}-warehouse-postgresql
+  name: warehouse-postgresql
   labels:
     strimzi.io/cluster: {{ $fullName }}
 spec:
   class: io.confluent.connect.jdbc.JdbcSinkConnector
   tasksMax: 1
+  autoRestart:
+    enabled: true
   config:
     connection.url: jdbc:postgresql://{{ include "dataplane.warehouse.cluster" . }}:5432/{{ include "dataplane.warehouse.db" . }}
     connection.user: "${env:POSTGRES_DW_USER}"

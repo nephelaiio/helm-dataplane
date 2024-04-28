@@ -91,18 +91,6 @@
         login_host: "{{ pagila_host }}"
       when: dataplane_pagila_signal_table not in pagila_signal_tables
 
-    - name: Upgrade Metabase Helm chart
-      kubernetes.core.helm:
-        state: present
-        name: "{{ dataplane_chart }}"
-        chart_ref: "{{ dataplane_path }}/charts/dataplane"
-        release_namespace: "{{ dataplane_namespace }}"
-        kubeconfig: "{{ k8s_kubeconfig }}"
-        binary_path: "{{ k8s_helm_bin }}"
-        values: "{{ dataplane_chart_values }}"
-      vars:
-        dataplane_pagila_signaling: true
-
     - name: Signal table snapshot
       community.postgresql.postgresql_query:
         db: "{{ dataplane_pagila_db }}"
@@ -116,6 +104,14 @@
         signal_id: "{{ dataplane_pagila_db  }}_{{ ansible_date_time }}"
         signal_uuid: "{{ signal_id | to_uuid }}"
 
-    - name: Restart kafka connect deployment
-      ansible.builtin.command: >-
-        kubectl rollout restart deployment {{ dataplane_chart }}-connect --kubeconfig "{{ k8s_kubeconfig }}" -n {{ dataplane_namespace }}
+    - name: Upgrade Dataplane Helm chart
+      kubernetes.core.helm:
+        state: present
+        name: "{{ dataplane_chart }}"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
+        release_namespace: "{{ dataplane_namespace }}"
+        kubeconfig: "{{ k8s_kubeconfig }}"
+        binary_path: "{{ k8s_helm_bin }}"
+        values: "{{ dataplane_chart_values }}"
+      vars:
+        dataplane_connector_restart: true

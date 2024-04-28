@@ -133,54 +133,40 @@ wait:
 
 strimzi: strimzi-topics
 
-strimzi-topics:
+strimzi-topics topics:
 	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
-	kubectl exec \
-		-it pod/$(DATAPLANE_CHART)-strimzi-kafka-0 \
-		-n $(DATAPLANE_NS) -- \
-		/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list
+	kubectl get pod -n dataplane -o name -l "strimzi.io/component-type=kafka" -l "strimzi.io/broker-role=true" 2> /dev/null | \
+		xargs -I{} kubectl exec -it {} -n $(DATAPLANE_NS) -- \
+			/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list 2> /dev/null
 
-strimzi-connectors:
+strimzi-connector-logs connector-logs:
 	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
-	kubectl exec \
-		-it svc/$(DATAPLANE_CHART)-connect-api \
-		-n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{}  kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors/\{\} 2>/dev/null
+	kubectl get pod -n dataplane -o name -l "strimzi.io/component-type=kafka-connect" 2>/dev/null | \
+		xargs -I{} kubectl logs {} -n $(DATAPLANE_NS)
 
-strimzi-connector-status:
+strimzi-connectors connectors:
 	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
-	kubectl exec \
-		-it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-			curl -s http://localhost:8083/connectors \
-	| jq '.[]' -r \
-	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.state) | .[]' -r
+	export CONNECTORS=$$(kubectl get pod -n dataplane -o name -l "strimzi.io/component-type=kafka-connect" 2>/dev/null | \
+		xargs -I{} kubectl exec -it {} -n $(DATAPLANE_NS) -- \
+			curl -s http://localhost:8083/connectors | jq '.[]' -r) 2>/dev/null && \
+	for connector in $$CONNECTORS; do \
+		kubectl exec -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
+			curl -s http://localhost:8083/connectors/$$connector 2>/dev/null | jq; \
+	done
 
-strimzi-connector-trace:
+strimzi-connector-restart connector-restart: wait
 	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
-	kubectl exec \
-		-it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-	| jq '.[]' -r \
-	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.trace) | .[]' -r
+	export CONNECTORS=$$(kubectl get kafkaconnector -n dataplane -o name && \
+	for connector in $$CONNECTORS; do \
+		kubectl annotate kafkaconnector $$connector -n $(DATAPLANE_NS) strimzi.io/restart=true
+	done
 
-strimzi-connector-restart: wait
-	@echo restart kafka connectors ; \
-	export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
-	kubectl exec -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-	| jq '.[]' -r \
-	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
-		curl -s -XPOST http://localhost:8083/connectors/\{\}/restart 2>/dev/null ; \
-	kubectl exec -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-	| jq '.[]' -r \
-	| xargs -I{} kubectl exec svc/$(DATAPLANE_CHART)-connect-api -it -n $(DATAPLANE_NS) -- \
-		curl -s -XPOST http://localhost:8083/connectors/\{\}/tasks/0/restart 2>/dev/null
+strimzi-connector-task-restart connector-task-restart: wait
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	export CONNECTORS=$$(kubectl get kafkaconnector -n dataplane -o name && \
+	for connector in $$CONNECTORS; do \
+		kubectl annotate kafkaconnector $$connector -n $(DATAPLANE_NS) strimzi.io/restart-task=0
+	done
 
 template:
 	helm template $(PWD)/charts/dataplane --values values.minimal.yml --namespace $(DATAPLANE_NS) --debug

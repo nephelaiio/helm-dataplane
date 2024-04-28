@@ -57,7 +57,7 @@ provisioner:
           dataplane_pagila_team: pagila
           dataplane_pagila_user: metabase
           dataplane_pagila_db: db
-          dataplane_pagila_signaling: false
+          dataplane_pagila_signaling: true
           dataplane_pagila_signal_schema: debezium
           dataplane_pagila_signal_table: signaling
 
@@ -66,7 +66,7 @@ provisioner:
           dataplane_chart: dataplane
           dataplane_path: ${MOLECULE_PROJECT_DIRECTORY}
           dataplane_metabase_hostname: "metabase.{{ k8s_cluster_name }}"
-          dataplane_pagila_connector_name: pagila-connector
+          dataplane_connector_restart: false
           dataplane_chart_values:
             util:
               image:
@@ -91,48 +91,57 @@ provisioner:
               postgres:
                 - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                   port: 5432
-                  id: pagila
-                  connector: "{{ dataplane_pagila_connector_name }}"
+                  prefix: pagila
+                  connector: pagila-base
                   dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
                   exclude:
-                    - "public.staff"
                     - "debezium.*"
-                  partitions:
-                    - source: "public.payment.*"
-                      sink: "payment"
+                    - "public.staff"
+                    - "public.payment.*"
                 - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                   port: 5432
-                  id: include
+                  prefix: pagila
+                  connector: pagila-staff
                   dbname: "{{ dataplane_pagila_db }}"
                   signaling: "{{ dataplane_pagila_signaling }}"
                   include:
                     - "public.staff"
+                - hostname: "{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
+                  port: 5432
+                  prefix: pagila
+                  connector: pagila-partition
+                  dbname: "{{ dataplane_pagila_db }}"
+                  signaling: "{{ dataplane_pagila_signaling }}"
+                  partitions:
+                    - source: "public.payment.*"
+                      sink: "payment"
             strimzi:
               connect:
+                restart: "{{ dataplane_connector_restart }}"
                 image:
                   repository: "{{ kind_registry_hostname }}:{{ kind_registry_port }}/nephelaiio/dataplane-connect"
                   tag: latest
                 secret: "postgres-{{ dataplane_pagila_team }}-{{ dataplane_pagila_db }}"
                 config:
                   acks: all
-                  config.storage.replication.factor: 3
-                  offset.storage.replication.factor: 3
-                  status.storage.replication.factor: 3
+                  config.storage.replication.factor: 1
+                  offset.storage.replication.factor: 1
+                  status.storage.replication.factor: 1
               kafka:
-                replicas: 3
-                brokers: 3
+                brokers: 1
                 storage:
                   size: 10Gi
                   class: standard
                 config:
-                  offsets.topic.replication.factor: 3
-                  transaction.state.log.replication.factor: 3
-                  transaction.state.log.min.isr: 3
-                  num.partitions: 3
-                  default.replication.factor: 3
-                  min.insync.replicas: 2
-              zookeeper:
+                  offsets.topic.replication.factor: 1
+                  transaction.state.log.replication.factor: 1
+                  transaction.state.log.min.isr: 1
+                  num.partitions: 1
+                  default.replication.factor: 1
+                  min.insync.replicas: 1
+              kraft:
+                replicas: 1
                 storage:
                   size: 10Gi
                   class: standard

@@ -54,7 +54,7 @@
         - name: Record source table data
           ansible.builtin.set_fact:
             pagila_all_tables: "{{ _table_names | list }}"
-            pagila_target_tables: "{{ _table_names | reject('regex', '^payment_.*') | reject('regex', '^staff') }}"
+            pagila_target_tables: "{{ _table_names | reject('regex', '^payment_.*') }}"
           vars:
             _table_names: "{{ pagila_table_query.query_result | map(attribute='table_name') }}"
 
@@ -101,7 +101,7 @@
 
         - name: Verify sink database table names
           block:
-            - name: Verify warehouse pagila tables
+            - name: Verify warehouse tables
               community.postgresql.postgresql_query:
                 db: warehouse
                 query: |
@@ -113,18 +113,16 @@
                 map_format: 'nephelaiio.plugins.map_format'
                 warehouse_tables_expected: "{{ pagila_target_tables | map(map_format, 'pagila_public_%s') | list }}"
                 warehouse_tables_pagila: "{{ warehouse_tables_found | select('match', '^pagila_public_.*') }}"
-                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^include_public_.*') }}"
                 warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
               register: warehouse_table_query
-              retries: 20
-              delay: 30
+              retries: 1
+              delay: 5
               until:
                 - warehouse_tables_expected | difference(warehouse_tables_pagila) | length == 0
                 - warehouse_tables_pagila | difference(warehouse_tables_expected) | length == 0
-                - warehouse_tables_include == ['include_public_staff']
 
           rescue:
-            - name: Debug pagila table mismatches
+            - name: Debug warehouse table mismatches
               ansible.builtin.debug:
                 msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
               vars:
@@ -136,23 +134,16 @@
                 warehouse_tables_diff_found: "{{ warehouse_tables_pagila | difference(warehouse_tables_expected) }}"
                 warehouse_tables_diff: "{{ warehouse_tables_diff_expected + warehouse_tables_diff_found }}"
 
-            - name: Debug include table mismatches
-              ansible.builtin.debug:
-                msg: "table diff=[{{ ', '.join(warehouse_tables_diff) }}]"
-              vars:
-                warehouse_tables_expected: ["include_public_staff"]
-                warehouse_tables_include: "{{ warehouse_tables_found | select('match', '^pagila_public_.*') }}"
-                warehouse_tables_found: "{{ warehouse_table_query.query_result | map(attribute='table_name') | list }}"
-                warehouse_tables_diff_expected: "{{ warehouse_tables_expected | difference(warehouse_tables_include) }}"
-                warehouse_tables_diff_found: "{{ warehouse_tables_include | difference(warehouse_tables_expected) }}"
-                warehouse_tables_diff: "{{ warehouse_tables_diff_expected + warehouse_tables_diff_found }}"
-
             - name: Fail verification
               ansible.builtin.fail:
 
-        - name: Validate kafka connector name
-          ansible.builtin.fail:
-            msg: "connector dataplane-connector was not found"
+        - name: Validate Kafka connector name
+          ansible.builtin.assert:
+            that:
+              - connector_query | selectattr('metadata.name', 'equalto', 'pagila-base') | length > 0
+              - connector_query | selectattr('metadata.name', 'equalto', 'pagila-staff') | length > 0
+              - connector_query | selectattr('metadata.name', 'equalto', 'pagila-partition-payment') | length > 0
+              - connector_query | selectattr('metadata.name', 'equalto', 'warehouse-postgresql') | length > 0
           vars:
             connector_matches: "{{ connector_query | selectattr('metadata.name', 'equalto', 'pagila-connector') | length }}"
             connector_present: "{{ connector_matches | int > 0 }}"
@@ -163,11 +154,9 @@
               kind='KafkaConnector',
               kubeconfig=k8s_kubeconfig
               ) }}"
-          until: connector_present
-          failed_when: not connector_present
 
         - name: Wait for cdc to complete
-          pause:
+          ansible.builtin.pause:
             minutes: 5
 
         - name: Query warehouse table data
@@ -186,9 +175,10 @@
           ansible.builtin.set_fact:
             warehouse_data: "{{ warehouse_data_query.results | nephelaiio.plugins.list_to_dict('item') }}"
 
-        - name: Verify warehouse pagila table data
-          ansible.builtin.fail:
-            msg: >-
+        - name: Verify warehouse table data
+          ansible.builtin.assert:
+            that: warehouse_table_records >= source_table_records
+            fail_msg: >-
               warehouse data for table {{ source_table }} is incomplete,
               {{ warehouse_table_records }}/{{ source_table_records }} found"
           vars:
@@ -199,21 +189,6 @@
           loop_control:
             label: "{{ source_table }}"
           loop: "{{ (pagila_target_tables | list) }}"
-          when: source_table_records > warehouse_table_records
-
-        - name: Verify warehouse include table data
-          ansible.builtin.fail:
-            msg: >-
-              warehouse data for table {{ source_table }} is incomplete,
-              {{ warehouse_table_records }}/{{ source_table_records }} found"
-          vars:
-            warehouse_table_records: "{{ (warehouse_data[warehouse_table].query_result | list)[0].count }}"
-            warehouse_table: "include_public_{{ item }}"
-            source_table: "{{ item }}"
-            source_table_records: "{{ (pagila_data[source_table].query_result | list)[0].count }}"
-          loop:
-            - "staff"
-          when: source_table_records > warehouse_table_records
 
     - name: Verify metabase app database
       when: lookup('ansible.builtin.env', 'METABASE_VERIFY', default='true') | bool
