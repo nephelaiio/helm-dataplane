@@ -23,7 +23,7 @@ strimzi:
   kafka:
     storage:
       class: standard
-  zookeeper:
+  kraft:
     storage:
       class: standard
 zalando:

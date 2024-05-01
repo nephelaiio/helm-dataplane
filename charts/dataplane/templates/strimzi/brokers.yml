@@ -1,0 +1,30 @@
+{{- $kafkaAnnotations := .Values.strimzi.kafka.annotations }}
+{{- $clusterName := include "dataplane.strimzi.kafka.fullname" . }}
+{{- $poolName := printf "%s-%s" (include "dataplane.strimzi.kafka.fullname" .) "broker" }}
+{{- $brokerCount := (int .Values.strimzi.kafka.brokers) }}
+{{- $brokerStorageSize := required "kraft storage size is required" .Values.strimzi.kraft.storage.size }}
+{{- $brokerStorageClass := required "kraft storage class is required" .Values.strimzi.kraft.storage.class }}
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: {{ $poolName }}
+  labels:
+    strimzi.io/cluster: {{ $clusterName }}
+    {{- include "dataplane.strimzi.labels" . | nindent 4 }}
+  {{- with $kafkaAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ $brokerCount }}
+  roles:
+    - broker
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: {{ $brokerStorageSize }}
+        class: {{ $brokerStorageClass }}
+        deleteClaim: false

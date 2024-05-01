@@ -1,18 +1,11 @@
 ---
-- name: side effect
-
+- name: Side effect
   hosts: localhost
-
   gather_facts: true
-
   vars:
     extra_table: languages
-
-  roles:
-    - nephelaiio.plugins
-
   tasks:
-    - name: query pagila connection data
+    - name: Query pagila connection data
       ansible.builtin.set_fact:
         pagila_user: "{{ pagila_db_secret_data.data.username | b64decode }}"
         pagila_pass: "{{ pagila_db_secret_data.data.password | b64decode }}"
@@ -27,7 +20,7 @@
           kubeconfig=k8s_kubeconfig
           )}}"
 
-    - name: query pagila service data
+    - name: Query pagila service data
       ansible.builtin.set_fact:
         pagila_host: "{{ pagila_db_svc_data.status.loadBalancer.ingress[0].ip }}"
       vars:
@@ -41,7 +34,7 @@
           kubeconfig=k8s_kubeconfig
           )}}"
 
-    - name: create pagila debezium signal schema
+    - name: Create pagila debezium signal schema
       community.postgresql.postgresql_schema:
         db: "{{ dataplane_pagila_db }}"
         name: "{{ dataplane_pagila_signal_schema }}"
@@ -49,30 +42,34 @@
         login_password: "{{ pagila_pass }}"
         login_host: "{{ pagila_host }}"
 
-    - name: query pagila public tables
+    - name: Query pagila public tables
       community.postgresql.postgresql_query:
         db: "{{ dataplane_pagila_db }}"
-        query: "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
+        query: >-
+          SELECT table_name FROM information_schema.tables
+          WHERE table_schema='public' AND table_type='BASE TABLE'
         login_user: "{{ pagila_user }}"
         login_password: "{{ pagila_pass }}"
         login_host: "{{ pagila_host }}"
       register: pagila_table_query
 
-    - name: query pagila debezium tables
+    - name: Query pagila debezium tables
       community.postgresql.postgresql_query:
         db: "{{ dataplane_pagila_db }}"
-        query: "SELECT table_name FROM information_schema.tables WHERE table_schema='{{ dataplane_pagila_signal_schema }}' AND table_type='BASE TABLE'"
+        query: >-
+          SELECT table_name FROM information_schema.tables
+          WHERE table_schema='{{ dataplane_pagila_signal_schema }}' AND table_type='BASE TABLE'
         login_user: "{{ pagila_user }}"
         login_password: "{{ pagila_pass }}"
         login_host: "{{ pagila_host }}"
       register: pagila_debezium_query
 
-    - name: record pagila table data
+    - name: Record pagila table data
       ansible.builtin.set_fact:
         pagila_data_tables: "{{ pagila_table_query.query_result | map(attribute='table_name') | difference(['payment']) | list }}"
         pagila_signal_tables: "{{ pagila_debezium_query.query_result | map(attribute='table_name') | list }}"
 
-    - name: create pagila data table
+    - name: Create pagila data table
       community.postgresql.postgresql_query:
         db: "{{ dataplane_pagila_db }}"
         query: "CREATE TABLE {{ extra_table }} AS TABLE language"
@@ -81,7 +78,7 @@
         login_host: "{{ pagila_host }}"
       when: extra_table not in pagila_data_tables
 
-    - name: create pagila debezium signal table
+    - name: Create pagila debezium signal table
       community.postgresql.postgresql_table:
         db: "{{ dataplane_pagila_db }}"
         name: "{{ dataplane_pagila_signal_schema }}.{{ dataplane_pagila_signal_table }}"
@@ -94,19 +91,7 @@
         login_host: "{{ pagila_host }}"
       when: dataplane_pagila_signal_table not in pagila_signal_tables
 
-    - name: upgrade metabase helm chart
-      kubernetes.core.helm:
-        state: present
-        name: "{{ dataplane_chart }}"
-        chart_ref: "{{ dataplane_path }}/charts/dataplane"
-        release_namespace: "{{ dataplane_namespace }}"
-        kubeconfig: "{{ k8s_kubeconfig }}"
-        binary_path: "{{ k8s_helm_bin }}"
-        values: "{{ dataplane_chart_values }}"
-      vars:
-        dataplane_pagila_signaling: true
-
-    - name: signal table snapshot
+    - name: Signal table snapshot
       community.postgresql.postgresql_query:
         db: "{{ dataplane_pagila_db }}"
         query: >-
@@ -119,6 +104,14 @@
         signal_id: "{{ dataplane_pagila_db  }}_{{ ansible_date_time }}"
         signal_uuid: "{{ signal_id | to_uuid }}"
 
-    - name: restart kafka connect deployment
-      ansible.builtin.command: >-
-        kubectl rollout restart deployment {{ dataplane_chart }}-connect --kubeconfig "{{ k8s_kubeconfig }}" -n {{ dataplane_namespace }}
+    - name: Upgrade Dataplane Helm chart
+      kubernetes.core.helm:
+        state: present
+        name: "{{ dataplane_chart }}"
+        chart_ref: "{{ dataplane_path }}/charts/dataplane"
+        release_namespace: "{{ dataplane_namespace }}"
+        kubeconfig: "{{ k8s_kubeconfig }}"
+        binary_path: "{{ k8s_helm_bin }}"
+        values: "{{ dataplane_chart_values }}"
+      vars:
+        dataplane_connector_restart: true

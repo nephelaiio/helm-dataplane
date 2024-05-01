@@ -1,6 +1,4 @@
-##
-# Dataplane Helm chart
-#
+.PHONY: all ${MAKECMDGOALS}
 
 GIT_COMMIT := $$(date +%Y%m%d%H%M%S)
 
@@ -38,61 +36,84 @@ DOCKER_REGISTRY ?= localhost:$$(yq eval '.provisioner.inventory.hosts.all.vars.k
 DOCKER_USER ?= nephelaiio
 DATAPLANE_RELEASE ?= latest
 
-TARGETS = test poetry clean molecule run helm kubectl psql docker dataplane dataplane-connect images wait strimzi strimzi-topics strimzi-connectors strimzi-connector-status strimzi-connector-trace strimzi-connector-restart
-
-.PHONY: $(TARGETS)
-
 test:
 	./bin/test
 
-clean:
+dependency create prepare converge idempotence side-effect verify destroy cleanup reset list:
+	KIND_RELEASE=$(KIND_RELEASE) \
+	KIND_IMAGE=$(KIND_IMAGE) \
+	poetry run molecule $@ -s $(SCENARIO)
+
+purge:
 	@echo cleaning ansible cache
 	if [ -d $(HOME)/.cache/ansible-compat/ ]; then \
 		find $(HOME)/.cache/ansible-compat/ -mindepth 2 -maxdepth 2 -type d -name "roles" | xargs -r rm -rf; \
 	fi ;
 
-molecule: clean poetry
-	KIND_RELEASE=$(KIND_RELEASE) KIND_IMAGE=$(KIND_IMAGE) poetry run molecule $(filter-out $(TARGETS),$(MAKECMDGOALS)) -s $(SCENARIO)
+clean: destroy reset purge
+	@poetry env remove $$(which python) >/dev/null 2>&1 || exit 0
+
+ifeq (run,$(firstword $(MAKECMDGOALS)))
+    RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 run:
-	$(EPHEMERAL_DIR)/bwrap $(filter-out $@,$(MAKECMDGOALS))
+	$(EPHEMERAL_DIR)/bwrap ${RUN_ARGS}
+
+ifeq (helm,$(firstword $(MAKECMDGOALS)))
+    HELM_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 helm:
-	KUBECONFIG=$(EPHEMERAL_DIR)/config helm $(filter-out $@,$(MAKECMDGOALS))
+	KUBECONFIG=$(EPHEMERAL_DIR)/config helm ${HELM_ARGS}
+
+ifeq (kubectl,$(firstword $(MAKECMDGOALS)))
+    KUBECTL_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 kubectl:
-	@KUBECONFIG=$(EPHEMERAL_DIR)/config kubectl $(filter-out $@,$(MAKECMDGOALS))
+	@KUBECONFIG=$(EPHEMERAL_DIR)/config kubectl ${KUBECTL_ARGS}
 
 poetry:
 	@poetry install --no-root
 
+ifeq (pagila,$(firstword $(MAKECMDGOALS)))
+    PAGILA_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
+
 pagila:
-	@PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) -d $(PAGILA_DB) $(filter-out $@,$(MAKECMDGOALS))
+	@PGPASSWORD=$(PAGILA_PASS) psql -h $(PAGILA_HOST) -U $(PAGILA_USER) -d $(PAGILA_DB) ${PAGILA_ARGS}
+
+ifeq (metabase,$(firstword $(MAKECMDGOALS)))
+    METABASE_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 metabase:
-	@PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) -d $(METABASE_DB) $(filter-out $@,$(MAKECMDGOALS))
+	@PGPASSWORD=$(METABASE_PASS) psql -h $(METABASE_HOST) -U $(METABASE_USER) -d $(METABASE_DB) ${METABASE_ARGS}
+
+ifeq (warehouse,$(firstword $(MAKECMDGOALS)))
+    WAREHOUSE_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+    $(eval $(subst $(space),,$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))):;@:)
+endif
 
 warehouse:
-	@PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) -d $(WAREHOUSE_DB) $(filter-out $@,$(MAKECMDGOALS))
+	@PGPASSWORD=$(WAREHOUSE_PASS) psql -h $(WAREHOUSE_HOST) -U $(WAREHOUSE_USER) -d $(WAREHOUSE_DB) ${WAREHOUSE_ARGS}
 
 images: dataplane-connect dataplane-util
-	docker image prune --force; \
+	docker image prune --force && \
 	curl -s http://localhost:$(DOCKER_REGISTRY_PORT)/v2/_catalog | jq
 
-dataplane-init:
-	cd init ; \
-	docker build \
-		--rm \
-		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
-		. ; \
-	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
-
 dataplane-connect:
-	cd connect ; \
+	cd connect && \
 	docker build \
 		--rm \
 		--tag "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)" \
-		. ; \
+		. && \
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 dataplane-util:
@@ -104,59 +125,48 @@ dataplane-util:
 	docker image push "$(DOCKER_REGISTRY)$(DOCKER_USER)/$@:$(DATAPLANE_RELEASE)"
 
 wait:
-	@echo wait for service startup ; \
-	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-registry -- -n $(DATAPLANE_NS) ; \
-	make --no-print-directory kubectl rollout status deployment/$(DATAPLANE_CHART)-connect -- -n $(DATAPLANE_NS) ; \
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	echo wait for service startup && \
+	kubectl rollout status deployment/$(DATAPLANE_CHART)-registry -n $(DATAPLANE_NS) && \
+	kubectl get pod -l "app.kubernetes.io/name=kafka-connect" -n $(DATAPLANE_NS) -o name | \
+		xargs kubectl wait --for=jsonpath='{.status.phase}'=Running -n $(DATAPLANE_NS)
 
 strimzi: strimzi-topics
 
-strimzi-topics:
-	make --no-print-directory kubectl exec -- \
-		-it pod/$(DATAPLANE_CHART)-strimzi-kafka-0 \
-		-n $(DATAPLANE_NS) -- \
-		"/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list"
+strimzi-topics topics:
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	kubectl get pod -n dataplane -o name -l "strimzi.io/component-type=kafka" -l "strimzi.io/broker-role=true" 2> /dev/null | \
+		xargs -I{} kubectl exec -it {} -n $(DATAPLANE_NS) -- \
+			/opt/kafka/bin/kafka-topics.sh --bootstrap-server $(DATAPLANE_CHART)-strimzi-kafka-bootstrap:9092 --list 2> /dev/null
 
-strimzi-connectors:
-	@make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors/\{\} 2>/dev/null
+strimzi-connector-logs connector-logs:
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	kubectl get pod -n dataplane -o name -l "strimzi.io/component-type=kafka-connect" 2>/dev/null | \
+		xargs -I{} kubectl logs {} -n $(DATAPLANE_NS)
 
-strimzi-connector-status:
-	@make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.state) | .[]' -r
+strimzi-connectors connectors:
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	export CONNECTORS=$$(kubectl get pod -n dataplane -o name -l "strimzi.io/component-type=kafka-connect" 2>/dev/null | \
+		xargs -I{} kubectl exec -it {} -n $(DATAPLANE_NS) -- \
+			curl -s http://localhost:8083/connectors | jq '.[]' -r) 2>/dev/null && \
+	for connector in $$CONNECTORS; do \
+		kubectl exec -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
+			curl -s http://localhost:8083/connectors/$$connector 2>/dev/null | jq; \
+	done
 
-strimzi-connector-trace:
-	@make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors/\{\}/status 2>/dev/null | jq '.tasks | map(.trace) | .[]' -r
+strimzi-connector-restart connector-restart: wait
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	export CONNECTORS=$$(kubectl get kafkaconnector -n dataplane -o name && \
+	for connector in $$CONNECTORS; do \
+		kubectl annotate kafkaconnector $$connector -n $(DATAPLANE_NS) strimzi.io/restart=true
+	done
 
-strimzi-connector-restart: wait
-	@echo restart kafka connectors ; \
-	make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
-		curl -s -XPOST http://localhost:8083/connectors/\{\}/restart 2>/dev/null ; \
-	make --no-print-directory kubectl exec -- -it svc/$(DATAPLANE_CHART)-connect-api -n $(DATAPLANE_NS) -- \
-		curl -s http://localhost:8083/connectors \
-		| jq '.[]' -r \
-		| xargs -I{} make --no-print-directory kubectl exec svc/$(DATAPLANE_CHART)-connect-api -- -it -n $(DATAPLANE_NS) -- \
-		curl -s -XPOST http://localhost:8083/connectors/\{\}/tasks/0/restart 2>/dev/null
+strimzi-connector-task-restart connector-task-restart: wait
+	@export KUBECONFIG=$(EPHEMERAL_DIR)/config && \
+	export CONNECTORS=$$(kubectl get kafkaconnector -n dataplane -o name && \
+	for connector in $$CONNECTORS; do \
+		kubectl annotate kafkaconnector $$connector -n $(DATAPLANE_NS) strimzi.io/restart-task=0
+	done
 
 template:
 	helm template $(PWD)/charts/dataplane --values values.minimal.yml --namespace $(DATAPLANE_NS) --debug
-
-dataplane:
-	@:
-
-%:
-	@:
-
-# end

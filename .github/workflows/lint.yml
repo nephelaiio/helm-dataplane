@@ -2,35 +2,31 @@
 name: lint
 
 on:
-
   pull_request:
     branches:
       - master
 
 jobs:
-
   lint:
-
     name: lint
     runs-on: ubuntu-latest
     steps:
-
-      - name: update package cache
+      - name: Update package cache
         run: sudo apt-get update
 
-      - name: check out the codebase
-        uses: actions/checkout@v3
+      - name: Check out the codebase
+        uses: actions/checkout@v4
 
-      - name: install kubectl
+      - name: Install kubectl
         uses: azure/setup-kubectl@v3
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
           check-latest: true
 
-      - name: set up chart-testing
-        uses: helm/chart-testing-action@v2.3.1
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.6.1
 
-      - name: lint charts
+      - name: Lint charts
         run: ct lint --chart-dirs $GITHUB_WORKSPACE/charts --all --validate-maintainers=false

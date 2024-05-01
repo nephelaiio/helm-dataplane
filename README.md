@@ -82,5 +82,5 @@ Cluster dependencies are provisioned with role [nephelaiio.k8s](https://github.c
 Testing is performed using molecule against a local cluster using Github Actions and can be replicated locally for the latest supported cluster version using the following commands:
 
 ``` sh
-./bin/test
+make test
 ```

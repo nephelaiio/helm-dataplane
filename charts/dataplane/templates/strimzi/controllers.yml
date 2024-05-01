@@ -1,0 +1,29 @@
+{{- $kafkaAnnotations := .Values.strimzi.kafka.annotations }}
+{{- $clusterName := include "dataplane.strimzi.kafka.fullname" . }}
+{{- $poolName := printf "%s-%s" (include "dataplane.strimzi.kafka.fullname" .) "controller" }}
+{{- $kraftStorageSize := required "kraft storage size is required" .Values.strimzi.kraft.storage.size }}
+{{- $kraftStorageClass := required "kraft storage class is required" .Values.strimzi.kraft.storage.class }}
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: {{ $poolName }}
+  labels:
+    strimzi.io/cluster: {{ $clusterName }}
+    {{- include "dataplane.strimzi.labels" . | nindent 4 }}
+  {{- with $kafkaAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.strimzi.kraft.replicas }}
+  roles:
+    - controller
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: {{ $kraftStorageSize }}
+        class: {{ $kraftStorageClass }}
+        deleteClaim: false

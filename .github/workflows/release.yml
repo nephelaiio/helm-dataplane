@@ -2,7 +2,6 @@
 name: release chart
 
 on:
-
   pull_request:
     branches:
       - master
@@ -12,28 +11,25 @@ on:
       - 'charts/**/Chart.yaml'
 
 jobs:
-
   release:
-
     if: github.event.pull_request.merged == true
     name: publish helm charts
     runs-on: ubuntu-latest
     steps:
-
-      - name: update package cache
+      - name: Update package cache
         run: sudo apt-get update
 
-      - name: checkout
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
          fetch-depth: 0
 
-      - name: configure git
+      - name: Configure git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: release chart
-        uses: helm/chart-releaser-action@v1.5.0
+      - name: Release chart
+        uses: helm/chart-releaser-action@v1.6.0
         env:
           CR_TOKEN: '${{ secrets.GH_TOKEN }}'

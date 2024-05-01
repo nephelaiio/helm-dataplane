@@ -11,16 +11,12 @@ function debug {
     make kubectl logs job/dataplane-registry-connector-restart -- -n dataplane
     make kubectl describe job/dataplane-metabase-app-setup -- -n dataplane
     make kubectl logs job/dataplane-metabase-app-setup -- -n dataplane
+    exit 1
 }
 
 trap debug EXIT
 make template >/dev/null 2>&1 &&
-    make molecule destroy &&
-    make molecule create &&
+    make destroy create &&
     make images >/dev/null 2>&1 &&
-    make molecule converge &&
-    make wait &&
-    make molecule verify &&
-    make molecule side-effect &&
-    make molecule verify
+    make converge wait verify side-effect verify
 trap - EXIT
